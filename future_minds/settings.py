@@ -20,15 +20,16 @@ ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
 else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '.onrender.com']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '.onrender.com', '.vercel.app']
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# CSRF configuration for Render & HTTPS
+# CSRF configuration for Render, Vercel & HTTPS
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
+    'https://*.vercel.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
