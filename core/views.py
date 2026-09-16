@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Count, Avg, Q
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 
 from .models import User, StudentProfile, InstructorProfile, StudentActivity, Notification
 from .decorators import admin_required, instructor_required, student_required
@@ -13,6 +15,8 @@ from academy.models import Course, Lesson, ClassSession, Attendance, AttendanceR
 from assessment.models import Assignment, Submission, Quiz, QuizAttempt, StudentProgress, StudentAlert
 
 
+@never_cache
+@csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard_redirect')
