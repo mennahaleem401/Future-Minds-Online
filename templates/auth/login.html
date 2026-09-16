@@ -34,43 +34,12 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-fm-primary w-100 py-2 mb-3 fs-6">
+        <button type="submit" class="btn btn-fm-primary w-100 py-2 fs-6">
           <i class="fa-solid fa-arrow-right-to-bracket ms-2"></i> تسجيل الدخول
         </button>
       </form>
 
-      <!-- تجربة الحسابات بنقرة واحدة -->
-      <div class="mt-4 pt-3 border-top">
-        <p class="small text-muted text-center fw-bold mb-2">دخول سريع للتجربة</p>
-        <div class="d-grid gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary text-end d-flex align-items-center justify-content-between px-3 py-2 rounded-3" onclick="fillAndSubmit('admin', 'admin123')">
-            <span><i class="fa-solid fa-shield-halved ms-2"></i> <strong>أدمن الأكاديمية</strong></span>
-            <span class="badge bg-primary">دخول</span>
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-info text-end d-flex align-items-center justify-content-between px-3 py-2 rounded-3" onclick="fillAndSubmit('menna', 'instructor123')">
-            <span><i class="fa-solid fa-chalkboard-user ms-2"></i> <strong>المدرس (م/ منة - بايثون)</strong></span>
-            <span class="badge bg-info text-dark">دخول</span>
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-success text-end d-flex align-items-center justify-content-between px-3 py-2 rounded-3" onclick="fillAndSubmit('ahmed', 'student123')">
-            <span><i class="fa-solid fa-laptop ms-2"></i> <strong>طالب أونلاين (أحمد)</strong></span>
-            <span class="badge bg-success">دخول</span>
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary text-end d-flex align-items-center justify-content-between px-3 py-2 rounded-3" onclick="fillAndSubmit('omar', 'student123')">
-            <span><i class="fa-solid fa-school ms-2"></i> <strong>طالب في المقر (عمر)</strong></span>
-            <span class="badge bg-secondary">دخول</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
-
-<script>
-  function fillAndSubmit(user, pass) {
-    document.getElementById('usernameInput').value = user;
-    document.getElementById('passwordInput').value = pass;
-    document.getElementById('loginForm').submit();
-  }
-</script>
 {% endblock %}
