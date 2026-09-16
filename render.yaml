@@ -1,10 +1,3 @@
-databases:
-  - name: future-minds-db
-    databaseName: future_minds
-    user: future_minds_user
-    plan: free
-    region: frankfurt
-
 services:
   - type: web
     name: future-minds-academy
@@ -15,11 +8,7 @@ services:
     startCommand: "gunicorn future_minds.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.4
-      - key: DATABASE_URL
-        fromDatabase:
-          name: future-minds-db
-          property: connectionString
+        value: 3.12
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
