@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}إنشاء كويز جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-10 col-lg-8">
+    <div class="fm-card p-4 p-md-5">
+      <h4 class="fw-bold mb-1">إنشاء كويز جديد</h4>
+      <p class="text-muted small mb-4">كويز تفاعلي بيحسب الدرجة والنتيجة تلقائي فور تسليم الطالب.</p>
+
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label small fw-bold">الكورس</label>
+          <select name="course_id" class="form-select" required>
+            <option value="">-- اختر الكورس --</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}">{{ c.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">عنوان الكويز</label>
+          <input type="text" name="title" class="form-control" placeholder="مثال: كويز بايثون - اللوبس والتكرار" required>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6">
+            <label class="form-label small fw-bold">وقت الكويز (بالدقايق)</label>
+            <input type="number" name="time_limit_minutes" value="15" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">نسبة النجاح (%)</label>
+            <input type="number" name="passing_percentage" value="70" class="form-control" required>
+          </div>
+        </div>
+
+        <!-- استخراج الأسئلة من ملف -->
+        <div class="p-3 mb-4 rounded-3 border bg-light">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold mb-0 text-dark">
+              <i class="fa-solid fa-file-arrow-up text-primary ms-1"></i> استخراج الأسئلة من ملف (Word / Excel / CSV / Text)
+            </h6>
+            <span class="badge bg-primary text-white">جديد ⚡</span>
+          </div>
+          <p class="text-muted small mb-2">
+            يمكنك رفع ملف يحتوي على الأسئلة ليتم استخراجها وتصنيف اختياراتها وإجاباتها تلقائياً:
+            <br>
+            <span class="badge bg-white text-dark border">Word (.docx)</span>
+            <span class="badge bg-white text-dark border">Excel (.xlsx)</span>
+            <span class="badge bg-white text-dark border">CSV (.csv)</span>
+            <span class="badge bg-white text-dark border">Text (.txt)</span>
+            <span class="badge bg-white text-dark border">JSON (.json)</span>
+          </p>
+          <input type="file" name="questions_file" class="form-control" accept=".docx,.xlsx,.csv,.txt,.json">
+          <small class="text-muted mt-1 d-block">💡 إذا رفعت ملفاً، سيتم سحب كافة الأسئلة منه تلقائياً، ويمكنك أيضاً إضافة أسئلة يدوية إضافية بالأسفل.</small>
+        </div>
+
+        <hr class="my-4">
+        <h6 class="fw-bold mb-3"><i class="fa-solid fa-list-ol text-primary ms-1"></i> إضافة أسئلة يدوية (اختياري عند رفع ملف)</h6>
+
+        <!-- سؤال 1 -->
+        <div class="p-3 mb-3 rounded-3 border bg-light">
+          <div class="fw-bold small mb-2 text-dark">السؤال الأول</div>
+          <div class="mb-2">
+            <input type="text" name="q_1_prompt" class="form-control form-control-sm" placeholder="نص السؤال (اتركه فارغاً إذا رفعت ملف الأسئلة بالأعلى)...">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><input type="text" name="q_1_opt_a" class="form-control form-control-sm" placeholder="الاختيار (أ)"></div>
+            <div class="col-6"><input type="text" name="q_1_opt_b" class="form-control form-control-sm" placeholder="الاختيار (ب)"></div>
+            <div class="col-6"><input type="text" name="q_1_opt_c" class="form-control form-control-sm" placeholder="الاختيار (ج)"></div>
+            <div class="col-6"><input type="text" name="q_1_opt_d" class="form-control form-control-sm" placeholder="الاختيار (د)"></div>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <select name="q_1_correct" class="form-select form-select-sm">
+                <option value="A">الصحيح: الاختيار (أ)</option>
+                <option value="B">الصحيح: الاختيار (ب)</option>
+                <option value="C">الصحيح: الاختيار (ج)</option>
+                <option value="D">الصحيح: الاختيار (د)</option>
+              </select>
+            </div>
+            <div class="col-8">
+              <input type="text" name="q_1_explanation" class="form-control form-control-sm" placeholder="شرح الإجابة (اختياري)...">
+            </div>
+          </div>
+        </div>
+
+        <!-- سؤال 2 -->
+        <div class="p-3 mb-3 rounded-3 border bg-light">
+          <div class="fw-bold small mb-2 text-dark">السؤال الثاني</div>
+          <div class="mb-2">
+            <input type="text" name="q_2_prompt" class="form-control form-control-sm" placeholder="نص السؤال...">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><input type="text" name="q_2_opt_a" class="form-control form-control-sm" placeholder="الاختيار (أ)"></div>
+            <div class="col-6"><input type="text" name="q_2_opt_b" class="form-control form-control-sm" placeholder="الاختيار (ب)"></div>
+            <div class="col-6"><input type="text" name="q_2_opt_c" class="form-control form-control-sm" placeholder="الاختيار (ج)"></div>
+            <div class="col-6"><input type="text" name="q_2_opt_d" class="form-control form-control-sm" placeholder="الاختيار (د)"></div>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <select name="q_2_correct" class="form-select form-select-sm">
+                <option value="A">الصحيح: الاختيار (أ)</option>
+                <option value="B">الصحيح: الاختيار (ب)</option>
+                <option value="C">الصحيح: الاختيار (ج)</option>
+                <option value="D">الصحيح: الاختيار (د)</option>
+              </select>
+            </div>
+            <div class="col-8">
+              <input type="text" name="q_2_explanation" class="form-control form-control-sm" placeholder="شرح الإجابة (اختياري)...">
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'quizzes_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary">نشر الكويز</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

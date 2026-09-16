@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}{{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h3 class="fw-bold mb-1">{{ assignment.title }}</h3>
+      <p class="text-muted small mb-0">{{ assignment.course.title }} • الدرجة العظمى: {{ assignment.max_score }} • التسليم قبل: {{ assignment.due_date|date:"l, d F Y g:i A" }}</p>
+    </div>
+    <a href="{% url 'assignments_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-arrow-right ms-1"></i> رجوع للواجبات
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    
+    <!-- نص السؤال أو المطلوب -->
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-2">المطلوب في الواجب</h6>
+      <p class="text-secondary small mb-3" style="white-space: pre-wrap; line-height: 1.6;">{{ assignment.description }}</p>
+
+      {% if assignment.starter_file %}
+      <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between border">
+        <span class="small fw-bold text-dark"><i class="fa-solid fa-file-code ms-1 text-primary"></i> ملف بداية الكود للواجب</span>
+        <a href="{{ assignment.starter_file.url }}" download class="btn btn-sm btn-outline-primary py-0 px-2">تحميل الملف</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- قسم الطالب: تسليم الواجب أو النتيجة -->
+    {% if user.is_student_role %}
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-paper-plane text-primary ms-2"></i> تسليم الواجب</h6>
+      
+      {% if student_submission %}
+        <div class="p-3 bg-light rounded-3 mb-4 border">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="badge bg-success text-white"><i class="fa-solid fa-check ms-1"></i> تم التسليم</span>
+            <span class="text-muted small">{{ student_submission.submitted_at|date:"d M, g:i A" }}</span>
+          </div>
+
+          <p class="small text-secondary font-monospace p-2 bg-white rounded border mb-2 text-start" dir="ltr">{{ student_submission.submission_text }}</p>
+
+          {% if student_submission.status == 'GRADED' %}
+            <div class="p-3 rounded-3 bg-white border border-success">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="fw-bold text-success">درجة الواجب وملاحظات المدرس</span>
+                <h4 class="fw-bold text-success mb-0">{{ student_submission.score }} / {{ assignment.max_score }}</h4>
+              </div>
+              <p class="small text-muted mb-0">{{ student_submission.feedback|default:"شغل ممتاز والتزام ممتاز بالقواعد!" }}</p>
+            </div>
+          {% else %}
+            <div class="alert alert-info py-1 px-2 small mb-0">
+              <i class="fa-solid fa-hourglass-half ms-1"></i> الواجب مستني مراجعة وتصحيح المدرس.
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- فورم كتابة أو إعادة تسليم الحل -->
+      <form method="POST" action="{% url 'assignment_submit' assignment.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label small fw-bold">كود الحل أو إجابتك أو لينك المشروع (GitHub / Replit)</label>
+          <textarea name="submission_text" class="form-control text-start" dir="ltr" rows="4" placeholder="اكتب كود الحل هنا أو حط لينك ريبوزيتوري..." required>{{ student_submission.submission_text|default:'' }}</textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">رفع ملف إضافي (اختياري)</label>
+          <input type="file" name="submission_file" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-fm-primary">
+          <i class="fa-solid fa-upload ms-1"></i> {% if student_submission %}تعديل التسليم{% else %}تسليم الواجب الآن{% endif %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- قسم المدرس: تصحيح تسليمات الطلاب -->
+    {% if can_grade %}
+    <div class="fm-card p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">تسليمات الطلاب والتصحيح</h6>
+        <span class="badge bg-primary-subtle text-primary">{{ submissions.count }} تسليمات</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>وقت التسليم</th>
+              <th>الدرجة</th>
+              <th>الحالة</th>
+              <th>تصحيح</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in submissions %}
+            <tr>
+              <td><strong class="text-dark">{{ sub.student.user.display_name }}</strong></td>
+              <td class="small">{{ sub.submitted_at|date:"d M, g:i A" }}</td>
+              <td>
+                {% if sub.score is not None %}
+                  <span class="badge bg-success text-white fw-bold">{{ sub.score }} / {{ assignment.max_score }}</span>
+                {% else %}
+                  <span class="text-muted small">لم يصحح</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if sub.status == 'GRADED' %}
+                  <span class="badge bg-success-subtle text-success">تم التصحيح</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning">مستني</span>
+                {% endif %}
+              </td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" data-bs-toggle="modal" data-bs-target="#gradeModal{{ sub.id }}">
+                  رصد الدرجة
+                </button>
+              </td>
+            </tr>
+
+            <!-- نافذة التصحيح -->
+            <div class="modal fade" id="gradeModal{{ sub.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                  <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold">تصحيح واجب: {{ sub.student.user.display_name }}</h6>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="POST" action="{% url 'submission_grade' sub.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body py-3">
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">إجابة الطالب</label>
+                        <div class="p-3 bg-light rounded small font-monospace text-start" dir="ltr" style="max-height: 150px; overflow-y: auto;">{{ sub.submission_text }}</div>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">الدرجة (من {{ assignment.max_score }})</label>
+                        <input type="number" name="score" value="{{ sub.score|default:'' }}" max="{{ assignment.max_score }}" min="0" step="0.5" class="form-control" required>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">ملاحظاتك للطالب</label>
+                        <textarea name="feedback" class="form-control" rows="2" placeholder="تشجيع وملاحظات على الكود...">{{ sub.feedback|default:'' }}</textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                      <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+                      <button type="submit" class="btn btn-fm-primary">حفظ الدرجة</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-3 text-muted small">مفيش طلاب سلموا الواجب ده لسه.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3">بيانات الواجب</h6>
+      <div class="mb-2">
+        <span class="text-muted small d-block">الكورس</span>
+        <strong class="text-dark small">{{ assignment.course.title }}</strong>
+      </div>
+      <div class="mb-2">
+        <span class="text-muted small d-block">المدرس</span>
+        <strong class="text-dark small">م/ {{ assignment.instructor.user.display_name }}</strong>
+      </div>
+      <div>
+        <span class="text-muted small d-block">آخر موعد</span>
+        <strong class="text-dark small">{{ assignment.due_date|date:"d M, Y g:i A" }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

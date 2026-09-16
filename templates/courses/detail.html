@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        {% if course.is_active %}
+          <span class="badge bg-success-subtle text-success">كورس نشط</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary">مسودة</span>
+        {% endif %}
+        {% if course.schedule_days %}
+          <span class="badge bg-light text-dark border">
+            <i class="fa-regular fa-calendar ms-1"></i> {{ course.schedule_days }}
+          </span>
+        {% endif %}
+      </div>
+      <h3 class="fw-bold mb-1">{{ course.title }}</h3>
+      <p class="text-muted small mb-0">المدرس المسؤول: م/ {{ course.instructor.user.display_name }} ({{ course.instructor.specialization }})</p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      {% if can_manage_course %}
+      <button type="button" class="btn btn-sm btn-fm-primary" data-bs-toggle="modal" data-bs-target="#autoScheduleModal">
+        <i class="fa-solid fa-wand-magic-sparkles ms-1"></i> جدولة الحصص تلقائياً
+      </button>
+      <a href="{% url 'course_edit' course.id %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fa-solid fa-pen ms-1"></i> تعديل بيانات الكورس
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    
+    <!-- جدول حصص الكورس (الحصص الأساسية) -->
+    <div class="fm-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="fa-solid fa-calendar-check text-primary ms-2"></i> حصص الكورس</h5>
+          <p class="text-muted small mb-0">الحصص المجدولة للكورس ومواعيدها وشرحها وواجباتها.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary text-white">{{ total_sessions }} حصص إجمالي</span>
+          <span class="badge bg-success-subtle text-success">{{ completed_sessions }} منتهية</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table fm-table align-middle">
+          <thead>
+            <tr>
+              <th style="width: 70px;">الحصة</th>
+              <th>اسم الحصة</th>
+              <th>الميعاد واليوم</th>
+              <th>التوقيت</th>
+              <th>الحالة</th>
+              <th>الشرح والواجب</th>
+              <th class="text-start">الإجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sessions %}
+            <tr {% if s.status == 'ONGOING' %}class="table-primary bg-opacity-25"{% endif %}>
+              <td>
+                <span class="badge bg-light text-primary border fw-bold">#{{ s.session_number }}</span>
+              </td>
+              <td>
+                <strong class="text-dark d-block">{{ s.title }}</strong>
+                {% if s.status == 'ONGOING' %}
+                  <span class="badge bg-danger text-white blink small">جارية الآن</span>
+                {% endif %}
+              </td>
+              <td class="small">
+                <strong>{{ s.scheduled_date|date:"l" }}</strong>
+                <span class="text-muted d-block">{{ s.scheduled_date|date:"d M Y" }}</span>
+              </td>
+              <td class="small text-muted">
+                {{ s.start_time|time:"g:i A" }} - {{ s.end_time|time:"g:i A" }}
+              </td>
+              <td>
+                {% if s.status == 'SCHEDULED' %}
+                  <span class="badge bg-primary-subtle text-primary">مجدولة</span>
+                {% elif s.status == 'ONGOING' %}
+                  <span class="badge bg-success text-white">جارية الآن</span>
+                {% elif s.status == 'COMPLETED' %}
+                  <span class="badge bg-secondary-subtle text-secondary">منتهية</span>
+                {% else %}
+                  <span class="badge bg-light text-muted border">{{ s.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="small">
+                {% if s.summary or s.summary_file %}
+                  <span class="badge bg-success-subtle text-success d-inline-block mb-1" title="تمت إضافة شرح أو ملزمة الحصة">
+                    <i class="fa-solid fa-file-lines ms-1"></i> تم الشرح {% if s.summary_file %}(ملزمة){% endif %}
+                  </span>
+                {% endif %}
+                {% if s.assignments.exists %}
+                  <span class="badge bg-warning-subtle text-dark d-inline-block" title="يوجد واجب للحصة">
+                    <i class="fa-solid fa-list-check ms-1"></i> واجب متاح
+                  </span>
+                {% endif %}
+                {% if not s.summary and not s.summary_file and not s.assignments.exists %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="text-start">
+                <div class="d-flex gap-1 justify-content-end">
+                  {% if user.is_student_role and s.status != 'COMPLETED' %}
+                    {% if s.is_time_reached %}
+                      <a href="{% url 'join_class' s.id %}" target="_blank" class="btn btn-sm btn-join-class py-1 px-2">
+                        <i class="fa-solid fa-video ms-1"></i> ادخل
+                      </a>
+                    {% else %}
+                      <span class="badge bg-light text-muted border py-1 px-2 align-self-center" title="يفتح في ميعاد الحصة">
+                        <i class="fa-solid fa-lock ms-1"></i> مغلق
+                      </span>
+                    {% endif %}
+                  {% endif %}
+                  <a href="{% url 'class_detail' s.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2">
+                    تفاصيل
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <p class="mb-2">لسه مفيش حصص متولدة للكورس ده.</p>
+                {% if can_manage_course %}
+                <button type="button" class="btn btn-sm btn-fm-primary" data-bs-toggle="modal" data-bs-target="#autoScheduleModal">
+                  <i class="fa-solid fa-wand-magic-sparkles ms-1"></i> ابدأ الجدولة التلقائية للحصص الآن
+                </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- نبذة عن الكورس -->
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-2">عن الكورس ومخرجات التعلم</h6>
+      <p class="text-secondary small mb-0">{{ course.description }}</p>
+    </div>
+
+    <!-- مذكرات وملفات الكورس -->
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-folder-open text-warning ms-2"></i> المذكرات والملفات</h6>
+      <div class="list-group list-group-flush">
+        {% for mat in materials %}
+        <div class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-pdf text-danger"></i>
+            <strong class="small text-dark">{{ mat.title }}</strong>
+          </div>
+          {% if mat.file %}
+            <a href="{{ mat.file.url }}" download class="btn btn-sm btn-outline-primary py-0 px-3">تحميل</a>
+          {% elif mat.external_link %}
+            <a href="{{ mat.external_link }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-3">فتح الرابط</a>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-2 text-muted small">مفيش ملفات مرفوعة للكورس ده.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- العمود الجانبي: المدرس والطلاب -->
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-4 mb-4 text-center">
+      <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center fw-bold fs-3 mb-2" style="width: 60px; height: 60px;">
+        {{ course.instructor.user.first_name|default:"I"|slice:":1"|upper }}
+      </div>
+      <h6 class="fw-bold mb-1">م/ {{ course.instructor.user.display_name }}</h6>
+      <span class="badge bg-light text-primary border mb-2">{{ course.instructor.specialization }}</span>
+      <p class="text-muted small mb-0">{{ course.instructor.bio|default:"مدرس معتمد في Future Minds Academy." }}</p>
+    </div>
+
+    {% if can_manage_course or is_course_instructor %}
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-users text-primary ms-2"></i> الطلاب المسجلين ({{ course.enrolled_students.count }})</h6>
+      <ul class="list-unstyled mb-0 small">
+        {% for st in course.enrolled_students.all %}
+        <li class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <strong class="text-dark">{{ st.user.display_name }}</strong>
+          <span class="badge {% if st.learning_mode == 'ONLINE' %}badge-online{% else %}badge-offline{% endif %}">
+            {{ st.get_learning_mode_display }}
+          </span>
+        </li>
+        {% empty %}
+        <li class="text-muted text-center py-2">مفيش طلاب مقيدين في الكورس ده.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- نافذة الجدولة التلقائية للحصص (للأدمن فقط) -->
+{% if can_manage_course %}
+<div class="modal fade" id="autoScheduleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-wand-magic-sparkles text-primary ms-1"></i> الجدولة التلقائية لحصص الكورس
+          </h5>
+          <p class="text-muted small mb-0">حدد أيام الأسبوع والتوقيت لتوليد جميع الحصص بنسخ متطابقة وتواريخ محسوبة تلقائياً.</p>
+        </div>
+        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form method="POST" action="{% url 'course_auto_schedule' course.id %}">
+        {% csrf_token %}
+        <div class="modal-body py-3">
+          <div class="mb-3">
+            <label class="form-label small fw-bold d-block mb-2">أيام الحصص في الأسبوع <span class="text-danger">*</span></label>
+            <div class="d-flex flex-wrap gap-2">
+              {% for code, name in days_choices %}
+              <div class="form-check form-check-inline border rounded-2 px-3 py-2 bg-light m-0">
+                <input class="form-check-input" type="checkbox" name="schedule_days" value="{{ code }}" id="m_day_{{ code }}" {% if code in course_schedule_days %}checked{% endif %}>
+                <label class="form-check-label small fw-bold text-dark" for="m_day_{{ code }}">{{ name }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold">تاريخ أول حصة</label>
+              <input type="date" name="start_date" value="{{ course.start_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" class="form-control" required>
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold">وقت بدء الحصة</label>
+              <input type="time" name="start_time" value="{{ course.default_start_time|time:'H:i'|default:'17:00' }}" class="form-control" required>
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold">وقت انتهاء الحصة</label>
+              <input type="time" name="end_time" value="{{ course.default_end_time|time:'H:i'|default:'18:30' }}" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-8">
+              <label class="form-label small fw-bold">رابط جوجل ميت للحصص</label>
+              <input type="url" name="google_meet_link" value="{{ course.default_meet_link|default:'https://meet.google.com/abc-defg-hij' }}" class="form-control" placeholder="https://meet.google.com/..." required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold">عدد الحصص المطلوب توليدها</label>
+              <input type="number" name="total_sessions" value="{{ course.total_sessions_count|default:8 }}" min="1" max="50" class="form-control" required>
+            </div>
+          </div>
+
+          {% if sessions %}
+          <div class="p-3 bg-warning-subtle rounded-3 border border-warning">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="clear_existing" id="clearOldCheck" checked>
+              <label class="form-check-label small fw-bold text-dark" for="clearOldCheck">
+                مسح الحصص المجدولة السابقة التي لم تبدأ بعد، وإعادة توليد الحصص من جديد
+              </label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-fm-primary px-4">
+            <i class="fa-solid fa-wand-magic-sparkles ms-1"></i> تأكيد وتوليد الحصص
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}الكويزات{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">الكويزات واختبارات الفهم</h3>
+    <p class="text-muted small mb-0">اختبر معلوماتك وراجع إجاباتك بدرجات محسوبة تلقائياً.</p>
+  </div>
+  {% if user.is_admin_role or user.is_instructor_role %}
+  <a href="{% url 'quiz_create' %}" class="btn btn-fm-primary btn-sm">
+    <i class="fa-solid fa-plus ms-1"></i> كويز جديد
+  </a>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  {% for q in quizzes %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="fm-card h-100 d-flex flex-column p-4">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="badge bg-primary-subtle text-primary">{{ q.course.title }}</span>
+        <span class="badge bg-light text-dark border">{{ q.time_limit_minutes }} دقيقة</span>
+      </div>
+      <h5 class="fw-bold text-dark mb-1">{{ q.title }}</h5>
+      <p class="text-muted small mb-3 flex-grow-1">{{ q.description|default:"كويز سريع بعد المحاضرة لقياس الفهم." }}</p>
+
+      <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+        <span class="small text-muted"><i class="fa-solid fa-list-check ms-1"></i> {{ q.questions.count }} أسئلة</span>
+        
+        {% if user.is_student_role %}
+          {% if q.user_attempt %}
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge bg-success-subtle text-success fw-bold">جبت {{ q.user_attempt.percentage }}%</span>
+              <a href="{% url 'quiz_detail' q.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                النتيجة
+              </a>
+            </div>
+          {% else %}
+            <a href="{% url 'quiz_take' q.id %}" class="btn btn-sm btn-fm-primary">ابدأ الكويز</a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'quiz_detail' q.id %}" class="btn btn-sm btn-outline-primary">إدارة الكويز</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5 text-muted small">مفيش كويزات منشورة دلوقتي.</div>
+  {% endfor %}
+</div>
+{% endblock %}

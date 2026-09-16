@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}كشف الحضور{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">كشف الحضور والغياب</h3>
+    <p class="text-muted small mb-0">سجلات الحضور التلقائي عبر جوجل ميت وحضور الفروع والمقر.</p>
+  </div>
+  {% if user.is_admin_role %}
+  <a href="{% url 'attendance_rules_settings' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="fa-solid fa-gear ms-1"></i> ضبط قواعد الحضور
+  </a>
+  {% endif %}
+</div>
+
+<!-- ملخص أرقام الحضور السريع -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">إجمالي السجلات</span>
+      <h3 class="fw-bold my-1 text-dark">{{ total }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">حاضر في الميعاد</span>
+      <h3 class="fw-bold my-1 text-success">{{ present_cnt }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">متأخر</span>
+      <h3 class="fw-bold my-1 text-warning">{{ late_cnt }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">غايب</span>
+      <h3 class="fw-bold my-1 text-danger">{{ absent_cnt }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- جدول الحصص وكشوف الحضور -->
+<div class="fm-card p-4">
+  <h6 class="fw-bold mb-3">كشوف حضور الحصص</h6>
+  <div class="table-responsive">
+    <table class="table fm-table">
+      <thead>
+        <tr>
+          <th>الحصة</th>
+          <th>الكورس</th>
+          <th>المدرس</th>
+          <th>التاريخ</th>
+          <th>الحالة</th>
+          <th>كشف الحضور</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td><strong class="text-dark">{{ s.title }}</strong></td>
+          <td class="small text-muted">{{ s.course.title }}</td>
+          <td>م/ {{ s.instructor.user.display_name }}</td>
+          <td class="small">{{ s.scheduled_date|date:"d M, Y" }}</td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ s.status }}</span>
+          </td>
+          <td>
+            <a href="{% url 'attendance_session' s.id %}" class="btn btn-sm btn-fm-primary py-0 px-2">
+              عرض الكشف وتعديله
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-3 text-muted small">مفيش حصص مسجلة.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

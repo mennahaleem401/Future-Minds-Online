@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}كشف حضور: {{ session.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h3 class="fw-bold mb-1">كشف حضور: {{ session.title }}</h3>
+      <p class="text-muted small mb-0">{{ session.course.title }} • {{ session.scheduled_date|date:"l, d F Y" }}</p>
+    </div>
+    <a href="{% url 'attendance_index' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-arrow-right ms-1"></i> رجوع للكشوفات
+    </a>
+  </div>
+</div>
+
+<div class="fm-card p-4">
+  <form method="POST">
+    {% csrf_token %}
+    <div class="table-responsive mb-4">
+      <table class="table fm-table">
+        <thead>
+          <tr>
+            <th>الطالب</th>
+            <th>النوع</th>
+            <th>وقت الدخول المسجل</th>
+            <th>تلقائي ولا يدوي</th>
+            <th>تعديل الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for att in attendances %}
+          <tr>
+            <td>
+              <strong class="text-dark">{{ att.student.user.display_name }}</strong>
+            </td>
+            <td>
+              {% if att.student.learning_mode == 'ONLINE' %}
+                <span class="badge badge-online">أونلاين</span>
+              {% else %}
+                <span class="badge badge-offline">في المقر</span>
+              {% endif %}
+            </td>
+            <td class="small">
+              {{ att.join_time|date:"g:i:s A"|default:"لم يسجل دخول" }}
+            </td>
+            <td>
+              {% if att.click_join_event %}
+                <span class="badge bg-success-subtle text-success">ضغط على الرابط</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">لم يضغط</span>
+              {% endif %}
+              {% if att.manual_override %}
+                <span class="badge bg-warning-subtle text-warning ms-1">تعديل يدوي</span>
+              {% endif %}
+            </td>
+            <td>
+              <select name="status_{{ att.id }}" class="form-select form-select-sm" style="width: 130px;">
+                <option value="PRESENT" {% if att.status == 'PRESENT' %}selected{% endif %}>حاضر</option>
+                <option value="LATE" {% if att.status == 'LATE' %}selected{% endif %}>متأخر</option>
+                <option value="ABSENT" {% if att.status == 'ABSENT' %}selected{% endif %}>غايب</option>
+              </select>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-3 text-muted small">مفيش طلاب مسجلين في الحصة دي.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{% url 'attendance_index' %}" class="btn btn-light border">إلغاء</a>
+      <button type="submit" class="btn btn-fm-primary">حفظ تعديلات الحضور</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

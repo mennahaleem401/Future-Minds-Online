@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'quizzes_list' %}">Quizzes</a></li>
+      <li class="breadcrumb-item active">{{ quiz.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h3 class="fw-bold mb-1">{{ quiz.title }}</h3>
+      <p class="text-muted small mb-0">{{ quiz.course.title }} • نسبة النجاح: {{ quiz.passing_percentage }}% • وقت الكويز: {{ quiz.time_limit_minutes }} دقيقة</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      {% if can_manage %}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadQuestionsModal">
+          <i class="fa-solid fa-file-arrow-up ms-1"></i> استخراج أسئلة من ملف
+        </button>
+      {% endif %}
+
+      {% if user.is_student_role %}
+        {% if attempts %}
+          <span class="badge bg-success-subtle text-success fs-6 py-2 px-3 border border-success">
+            <i class="fa-solid fa-check ms-1"></i> تم إتمام الكويز (النتيجة: {{ attempts.first.percentage }}%)
+          </span>
+        {% else %}
+          <a href="{% url 'quiz_take' quiz.id %}" class="btn btn-fm-primary">ابدأ الكويز الآن</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="fm-card p-4 mb-4">
+      <h5 class="fw-bold mb-3">Quiz Overview</h5>
+      <p class="text-secondary small mb-3">{{ quiz.description|default:"Covers core fundamentals and practical syntax concepts." }}</p>
+      
+      <div class="row g-3">
+        <div class="col-6 col-md-4">
+          <span class="text-muted small d-block">Questions</span>
+          <strong class="text-dark">{{ questions_count }} Questions</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted small d-block">Duration</span>
+          <strong class="text-dark">{{ quiz.time_limit_minutes }} Minutes</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted small d-block">Passing Score</span>
+          <strong class="text-dark">{{ quiz.passing_percentage }}%</strong>
+        </div>
+      </div>
+    </div>
+
+    {% if can_manage %}
+    <!-- قسم استعراض وتعديل الأسئلة (خاص بالمدرس والأدمن) -->
+    <div class="fm-card p-4 mb-4">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3 pb-2 border-bottom">
+        <div>
+          <h5 class="fw-bold mb-1">
+            <i class="fa-solid fa-list-check text-primary ms-1"></i> أسئلة الكويز ({{ questions_count }} سؤال)
+          </h5>
+          <p class="text-muted small mb-0">يمكنك مراجعة جميع الأسئلة وتعديل نصها، خياراتها، الإجابة النموذجية، أو حذفها.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+            <i class="fa-solid fa-plus ms-1"></i> إضافة سؤال يدوي
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadQuestionsModal">
+            <i class="fa-solid fa-file-arrow-up ms-1"></i> رفع من ملف
+          </button>
+        </div>
+      </div>
+
+      {% if questions %}
+        <div class="d-flex flex-column gap-3">
+          {% for q in questions %}
+          <div class="p-3 rounded-3 border bg-light bg-opacity-50 position-relative">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+              <div class="d-flex align-items-start gap-2">
+                <span class="badge bg-primary text-white rounded-pill px-2 py-1 mt-1">{{ forloop.counter }}</span>
+                <div>
+                  <div class="fw-bold text-dark fs-6" style="white-space: pre-wrap;">{{ q.prompt }}</div>
+                  <small class="text-muted"><i class="fa-solid fa-award ms-1 text-warning"></i> {{ q.points }} نقطة</small>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" data-bs-toggle="modal" data-bs-target="#editQuestionModal{{ q.id }}" title="تعديل السؤال">
+                  <i class="fa-solid fa-pen ms-1"></i> تعديل
+                </button>
+                <form method="POST" action="{% url 'question_delete' q.id %}" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا السؤال من الكويز؟');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="حذف السؤال">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- الاختيارات -->
+            <div class="row g-2 mb-2 pe-3 ps-2">
+              <div class="col-12 col-md-6">
+                <div class="p-2 rounded border {% if q.correct_option == 'A' %}bg-success-subtle border-success text-success fw-bold{% else %}bg-white text-dark{% endif %} small">
+                  <strong>أ.</strong> {{ q.option_a }}
+                  {% if q.correct_option == 'A' %}<span class="badge bg-success text-white me-2">الإجابة الصحيحة ✓</span>{% endif %}
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="p-2 rounded border {% if q.correct_option == 'B' %}bg-success-subtle border-success text-success fw-bold{% else %}bg-white text-dark{% endif %} small">
+                  <strong>ب.</strong> {{ q.option_b }}
+                  {% if q.correct_option == 'B' %}<span class="badge bg-success text-white me-2">الإجابة الصحيحة ✓</span>{% endif %}
+                </div>
+              </div>
+              {% if q.option_c %}
+              <div class="col-12 col-md-6">
+                <div class="p-2 rounded border {% if q.correct_option == 'C' %}bg-success-subtle border-success text-success fw-bold{% else %}bg-white text-dark{% endif %} small">
+                  <strong>ج.</strong> {{ q.option_c }}
+                  {% if q.correct_option == 'C' %}<span class="badge bg-success text-white me-2">الإجابة الصحيحة ✓</span>{% endif %}
+                </div>
+              </div>
+              {% endif %}
+              {% if q.option_d %}
+              <div class="col-12 col-md-6">
+                <div class="p-2 rounded border {% if q.correct_option == 'D' %}bg-success-subtle border-success text-success fw-bold{% else %}bg-white text-dark{% endif %} small">
+                  <strong>د.</strong> {{ q.option_d }}
+                  {% if q.correct_option == 'D' %}<span class="badge bg-success text-white me-2">الإجابة الصحيحة ✓</span>{% endif %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+
+            {% if q.explanation %}
+            <div class="small text-muted bg-white p-2 rounded border me-3">
+              <i class="fa-solid fa-lightbulb text-warning ms-1"></i> <strong>الشرح:</strong> {{ q.explanation }}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- نافذة تعديل السؤال -->
+          <div class="modal fade" id="editQuestionModal{{ q.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+              <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                  <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square text-primary ms-1"></i> تعديل السؤال {{ forloop.counter }}</h5>
+                  <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{% url 'question_edit' q.id %}">
+                  {% csrf_token %}
+                  <div class="modal-body py-3">
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold">نص السؤال</label>
+                      <textarea name="prompt" class="form-control" rows="3" required>{{ q.prompt }}</textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small text-muted">الاختيار (أ)</label>
+                        <input type="text" name="option_a" value="{{ q.option_a }}" class="form-control form-control-sm" required>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small text-muted">الاختيار (ب)</label>
+                        <input type="text" name="option_b" value="{{ q.option_b }}" class="form-control form-control-sm" required>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small text-muted">الاختيار (ج) (اختياري)</label>
+                        <input type="text" name="option_c" value="{{ q.option_c }}" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small text-muted">الاختيار (د) (اختياري)</label>
+                        <input type="text" name="option_d" value="{{ q.option_d }}" class="form-control form-control-sm">
+                      </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold text-success">الإجابة النموذجية الصحيحة</label>
+                        <select name="correct_option" class="form-select form-select-sm">
+                          <option value="A" {% if q.correct_option == 'A' %}selected{% endif %}>الاختيار (أ)</option>
+                          <option value="B" {% if q.correct_option == 'B' %}selected{% endif %}>الاختيار (ب)</option>
+                          <option value="C" {% if q.correct_option == 'C' %}selected{% endif %}>الاختيار (ج)</option>
+                          <option value="D" {% if q.correct_option == 'D' %}selected{% endif %}>الاختيار (د)</option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small text-muted">درجة السؤال (النقاط)</label>
+                        <input type="number" name="points" value="{{ q.points }}" min="1" class="form-control form-control-sm">
+                      </div>
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label small text-muted">شرح وتوضيح الإجابة (اختياري)</label>
+                      <input type="text" name="explanation" value="{{ q.explanation }}" class="form-control form-control-sm" placeholder="توضيح يظهر للطلاب بعد إنهاء الكويز...">
+                    </div>
+                  </div>
+                  <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-fm-primary px-4">حفظ التعديلات</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-4 text-muted bg-light rounded-3 border small">
+          <i class="fa-solid fa-circle-question fs-3 d-block mb-2 text-secondary"></i>
+          لا توجد أسئلة مضافة في هذا الكويز حتى الآن.
+          <br>
+          <div class="mt-2 d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+              <i class="fa-solid fa-plus ms-1"></i> إضافة سؤال يدوي
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadQuestionsModal">
+              <i class="fa-solid fa-file-arrow-up ms-1"></i> استخراج أسئلة من ملف
+            </button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- نافذة إضافة سؤال يدوي جديد -->
+    <div class="modal fade" id="addQuestionModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle text-primary ms-1"></i> إضافة سؤال جديد إلى الكويز</h5>
+            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="POST" action="{% url 'question_add_single' quiz.id %}">
+            {% csrf_token %}
+            <div class="modal-body py-3">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">نص السؤال</label>
+                <textarea name="prompt" class="form-control" rows="3" placeholder="اكتب نص السؤال هنا..." required></textarea>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">الاختيار (أ)</label>
+                  <input type="text" name="option_a" class="form-control form-control-sm" placeholder="الاختيار الأول" required>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">الاختيار (ب)</label>
+                  <input type="text" name="option_b" class="form-control form-control-sm" placeholder="الاختيار الثاني" required>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">الاختيار (ج) (اختياري)</label>
+                  <input type="text" name="option_c" class="form-control form-control-sm" placeholder="الاختيار الثالث">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">الاختيار (د) (اختياري)</label>
+                  <input type="text" name="option_d" class="form-control form-control-sm" placeholder="الاختيار الرابع">
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small fw-bold text-success">الإجابة الصحيحة</label>
+                  <select name="correct_option" class="form-select form-select-sm">
+                    <option value="A">الاختيار (أ)</option>
+                    <option value="B">الاختيار (ب)</option>
+                    <option value="C">الاختيار (ج)</option>
+                    <option value="D">الاختيار (د)</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">درجة السؤال</label>
+                  <input type="number" name="points" value="1" min="1" class="form-control form-control-sm">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small text-muted">شرح وتوضيح الإجابة (اختياري)</label>
+                <input type="text" name="explanation" class="form-control form-control-sm" placeholder="توضيح يظهر للطلاب بعد إنهاء الكويز...">
+              </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+              <button type="submit" class="btn btn-fm-primary px-4">إضافة السؤال</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Attempts History -->
+    <div class="fm-card p-4">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> {% if user.is_student_role %}My Attempts{% else %}Student Attempts{% endif %}</h5>
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              {% if not user.is_student_role %}<th>Student</th>{% endif %}
+              <th>Date</th>
+              <th>Score</th>
+              <th>Percentage</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attempts %}
+            <tr>
+              {% if not user.is_student_role %}
+              <td><strong>{{ att.student.user.display_name }}</strong></td>
+              {% endif %}
+              <td class="small">{{ att.completed_at|date:"M d, Y g:i A" }}</td>
+              <td><span class="fw-bold">{{ att.score }} / {{ att.total_questions }}</span></td>
+              <td><span class="badge bg-light text-dark border">{{ att.percentage }}%</span></td>
+              <td>
+                {% if att.passed %}
+                  <span class="badge bg-success text-white">ناجح (PASSED)</span>
+                {% else %}
+                  <span class="badge bg-danger text-white">راسب (FAILED)</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-3 text-muted small">مفيش محاولات مسجلة للكويز ده حتى الآن.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_manage %}
+<!-- نافذة استخراج الأسئلة من ملف -->
+<div class="modal fade" id="uploadQuestionsModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-import text-primary ms-1"></i> استخراج أسئلة من ملف</h5>
+        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'quiz_upload_questions' quiz.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body py-3">
+          <p class="text-muted small mb-3">
+            يدعم النظام سحب واستخراج الأسئلة آلياً من ملفات:
+            <span class="badge bg-light text-dark border">Word (.docx)</span>
+            <span class="badge bg-light text-dark border">Excel (.xlsx)</span>
+            <span class="badge bg-light text-dark border">CSV (.csv)</span>
+            <span class="badge bg-light text-dark border">Text (.txt)</span>
+            <span class="badge bg-light text-dark border">JSON (.json)</span>
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">اختر ملف الأسئلة</label>
+            <input type="file" name="questions_file" class="form-control" accept=".docx,.xlsx,.csv,.txt,.json" required>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="replace_existing" value="1" id="replaceExistingCheck">
+            <label class="form-check-label small text-muted" for="replaceExistingCheck">
+              استبدال الأسئلة الحالية بالأسئلة الجديدة (حذف الأسئلة القديمة في الكويز)
+            </label>
+          </div>
+          <small class="text-muted d-block">إذا لم تفعل هذا الخيار، سيتم إضافة الأسئلة الجديدة إلى جانب الأسئلة الموجودة.</small>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-fm-primary px-4">استخراج الأسئلة وحفظها</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}ملف الطالب: {{ student.user.display_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <!-- كارت رأس الطالب -->
+  <div class="fm-card p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-2" style="width: 60px; height: 60px;">
+          {{ student.user.first_name|default:student.user.username|slice:":1"|upper }}
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h4 class="fw-bold mb-0 text-dark">{{ student.user.display_name }}</h4>
+            {% if student.learning_mode == 'ONLINE' %}
+              <span class="badge badge-online">أونلاين</span>
+            {% else %}
+              <span class="badge badge-offline">في المقر</span>
+            {% endif %}
+          </div>
+          <p class="text-muted small mb-0">@{{ student.user.username }} • تليفون: {{ student.user.phone|default:"غير مسجل" }}</p>
+          <span class="text-muted small">ولي الأمر: {{ student.emergency_contact|default:"ولي الأمر" }} ({{ student.emergency_phone|default:"بدون رقم" }})</span>
+        </div>
+      </div>
+
+      {% if user.is_admin_role %}
+      <a href="{% url 'student_edit' student.id %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fa-solid fa-pen-to-square ms-1"></i> تعديل البيانات
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    
+    <!-- تقدم الكورسات -->
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie text-primary ms-2"></i> مستوى الطالب في الكورسات</h6>
+      {% for pr in progress_records %}
+      <div class="p-3 mb-2 border rounded-3 bg-light bg-opacity-25">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <strong class="text-dark">{{ pr.course.title }}</strong>
+          <span class="badge bg-primary fs-6">{{ pr.overall_percentage|floatformat:0 }}%</span>
+        </div>
+        <div class="fm-progress-bar mb-2">
+          <div class="fm-progress-fill" style="width: {{ pr.overall_percentage|floatformat:0 }}%;"></div>
+        </div>
+        <div class="d-flex justify-content-between text-muted small">
+          <span>حضور: {{ pr.attendance_rate|floatformat:0 }}%</span>
+          <span>واجبات: {{ pr.assignment_score_avg|floatformat:0 }}%</span>
+          <span>كويزات: {{ pr.quiz_score_avg|floatformat:0 }}%</span>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted small mb-0">مفيش بيانات تقدم محسوبة لسه.</p>
+      {% endfor %}
+    </div>
+
+    <!-- سجل الحضور -->
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-clipboard-check text-success ms-2"></i> سجل حضور الحصص</h6>
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              <th>الحصة</th>
+              <th>التاريخ</th>
+              <th>وقت الدخول</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attendances %}
+            <tr>
+              <td><strong>{{ att.class_session.title }}</strong></td>
+              <td class="small">{{ att.class_session.scheduled_date|date:"d M, Y" }}</td>
+              <td class="small">{{ att.join_time|date:"g:i A"|default:"—" }}</td>
+              <td>
+                {% if att.status == 'PRESENT' %}
+                  <span class="badge badge-present">حاضر</span>
+                {% elif att.status == 'LATE' %}
+                  <span class="badge badge-late">متأخر</span>
+                {% else %}
+                  <span class="badge badge-absent">غايب</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-2 text-muted small">مفيش سجلات حضور.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <!-- تسليمات الواجبات -->
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-laptop-code text-warning ms-2"></i> تسليمات الواجبات</h6>
+      <div class="list-group list-group-flush">
+        {% for sub in submissions %}
+        <div class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+          <span class="small fw-bold text-dark">{{ sub.assignment.title }}</span>
+          {% if sub.status == 'GRADED' %}
+            <span class="badge bg-success-subtle text-success small">{{ sub.score }}/{{ sub.assignment.max_score }}</span>
+          {% else %}
+            <span class="badge bg-warning-subtle text-warning small">مستني</span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-muted small py-1">مفيش تسليمات مسجلة.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- نشاط الطالب -->
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-bolt text-primary ms-2"></i> سجل التفاعل</h6>
+      <div class="list-group list-group-flush">
+        {% for act in activities %}
+        <div class="list-group-item px-0 py-2">
+          <div class="small fw-bold text-dark">{{ act.description }}</div>
+          <span class="text-muted" style="font-size: 0.7rem;">منذ {{ act.timestamp|timesince }}</span>
+        </div>
+        {% empty %}
+        <div class="text-muted small py-1">مفيش أنشطة مسجلة.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}مستوى التقدم الدراسي{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">مستوى التقدم الدراسي</h3>
+    <p class="text-muted small mb-0">حساب حقيقي لنسبة التعلم مبني على الحضور، متابعة الدروس، الواجبات، والكويزات.</p>
+  </div>
+  {% if student %}
+  <span class="badge bg-light text-dark border fs-6">
+    {{ student.user.display_name }}
+  </span>
+  {% endif %}
+</div>
+
+<!-- كروت تقدم الكورسات -->
+<div class="row g-4">
+  {% for pr in progress_records %}
+  <div class="col-12 col-md-6">
+    <div class="fm-card p-4 p-md-5 h-100">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+          <span class="badge bg-primary-subtle text-primary fw-bold mb-1">الكورس</span>
+          <h4 class="fw-bold text-dark mb-0">{{ pr.course.title }}</h4>
+        </div>
+        <div class="text-start">
+          <h2 class="fw-bold text-primary mb-0">{{ pr.overall_percentage|floatformat:0 }}%</h2>
+          <span class="text-muted small">المستوى العام</span>
+        </div>
+      </div>
+
+      <!-- بار التقدم الرئيسي -->
+      <div class="fm-progress-bar mb-4" style="height: 12px;">
+        <div class="fm-progress-fill" style="width: {{ pr.overall_percentage|floatformat:0 }}%;"></div>
+      </div>
+
+      <!-- تفاصيل الأعمدة الأربعة للتقييم -->
+      {% if not user.is_student_role %}
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span><i class="fa-solid fa-video text-success ms-1"></i> نسبة الحضور</span>
+          <strong>{{ pr.attendance_rate|floatformat:0 }}%</strong>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-success" style="width: {{ pr.attendance_rate|floatformat:0 }}%;"></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span><i class="fa-solid fa-book-open text-primary ms-1"></i> الدروس اللي ذاكرتها</span>
+          <strong>{{ pr.lessons_completed_count }} من {{ pr.total_course_lessons_count }} درس</strong>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-primary" style="width: {{ pr.lesson_rate|floatformat:0 }}%;"></div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span><i class="fa-solid fa-laptop-code text-warning ms-1"></i> متوسط درجات الواجبات</span>
+          <strong>{{ pr.assignment_score_avg|floatformat:0 }}%</strong>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-warning" style="width: {{ pr.assignment_score_avg|floatformat:0 }}%;"></div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="d-flex justify-content-between small mb-1">
+          <span><i class="fa-solid fa-square-check text-purple ms-1" style="color: var(--fm-purple);"></i> متوسط الكويزات</span>
+          <strong>{{ pr.quiz_score_avg|floatformat:0 }}%</strong>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar" style="width: {{ pr.quiz_score_avg|floatformat:0 }}%; background-color: var(--fm-purple);"></div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-top text-start">
+        <a href="{% url 'course_detail' pr.course.id %}" class="btn btn-sm btn-outline-primary">متابعة المذاكرة</a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5 text-muted small">مفيش بيانات تقدم محسوبة لسه.</div>
+  {% endfor %}
+</div>
+{% endblock %}

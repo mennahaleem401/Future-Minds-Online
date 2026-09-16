@@ -1,0 +1,302 @@
+:root {
+  --fm-blue: #0077D4;
+  --fm-blue-hover: #005FA8;
+  --fm-purple: #6C2EB9;
+  --fm-purple-hover: #58219A;
+  --fm-dark: #0F172A;
+  --fm-navy: #1E293B;
+  --fm-slate: #64748B;
+  --fm-bg: #F8FAFC;
+  --fm-card-bg: #FFFFFF;
+  --fm-border: #E2E8F0;
+  --fm-gradient: linear-gradient(135deg, #6C2EB9 0%, #0077D4 100%);
+  --fm-gradient-subtle: linear-gradient(135deg, rgba(108, 46, 185, 0.08) 0%, rgba(0, 119, 212, 0.08) 100%);
+}
+
+body {
+  font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+  background-color: var(--fm-bg);
+  color: var(--fm-dark);
+  min-height: 100vh;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Official Logo Styling */
+.fm-brand-logo {
+  height: 46px;
+  width: auto;
+  object-fit: contain;
+}
+.fm-brand-logo-sm {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+.fm-brand-logo-lg {
+  height: 68px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Sidebar Navigation (RTL: right side) */
+.fm-sidebar {
+  width: 260px;
+  background-color: #FFFFFF;
+  border-left: 1px solid var(--fm-border);
+  border-right: none;
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: auto;
+  z-index: 1020;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.fm-sidebar-brand {
+  padding: 1.25rem 1.25rem;
+  border-bottom: 1px solid var(--fm-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fm-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.1rem;
+  margin: 0.2rem 0.6rem;
+  border-radius: 0.75rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.fm-nav-link:hover {
+  color: var(--fm-blue);
+  background-color: rgba(0, 119, 212, 0.08);
+}
+
+.fm-nav-link.active {
+  color: #FFFFFF;
+  background: var(--fm-gradient);
+  box-shadow: 0 4px 12px rgba(108, 46, 185, 0.25);
+  font-weight: 700;
+}
+
+.fm-nav-section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94A3B8;
+  padding: 0.85rem 1.25rem 0.3rem 1.25rem;
+}
+
+/* Main Content Wrapper */
+.fm-main-content {
+  margin-right: 260px;
+  margin-left: 0;
+  padding: 1.75rem 2rem;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.fm-topbar {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--fm-border);
+  padding: 0.75rem 2rem;
+  margin-right: 260px;
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+}
+
+@media (max-width: 991.98px) {
+  .fm-sidebar {
+    transform: translateX(100%);
+  }
+  .fm-sidebar.show {
+    transform: translateX(0);
+  }
+  .fm-main-content {
+    margin-right: 0;
+    padding: 1rem;
+  }
+  .fm-topbar {
+    margin-right: 0;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Cards & Styling */
+.fm-card {
+  background: #FFFFFF;
+  border: 1px solid var(--fm-border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fm-stat-card {
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #FFFFFF;
+  border: 1px solid var(--fm-border);
+}
+
+/* Buttons */
+.btn-fm-primary {
+  background: var(--fm-gradient);
+  color: #FFFFFF;
+  border: none;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.55rem 1.3rem;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.btn-fm-primary:hover {
+  color: #FFFFFF;
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-fm-outline {
+  border: 1.5px solid var(--fm-blue);
+  color: var(--fm-blue);
+  background: transparent;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1.2rem;
+}
+.btn-fm-outline:hover {
+  background: rgba(0, 119, 212, 0.08);
+  color: var(--fm-blue-hover);
+}
+
+/* Big Hero Join Class Button */
+.btn-join-class {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF !important;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0.85rem;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  animation: pulse-green 2s infinite;
+}
+.btn-join-class:hover {
+  transform: scale(1.02);
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Badges */
+.badge-present {
+  background-color: #DEF7EC;
+  color: #03543F;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+.badge-late {
+  background-color: #FEF08A;
+  color: #854D0E;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+.badge-absent {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+.badge-online {
+  background-color: #E0F2FE;
+  color: #0369A1;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+.badge-offline {
+  background-color: #EDE9FE;
+  color: #5B21B6;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+
+/* Progress Bar */
+.fm-progress-bar {
+  height: 10px;
+  border-radius: 9999px;
+  background-color: #E2E8F0;
+  overflow: hidden;
+}
+.fm-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--fm-gradient);
+  transition: width 0.5s ease;
+}
+
+/* Locked Session Button */
+.btn-locked-session {
+  background-color: #F8FAFC !important;
+  color: #64748B !important;
+  border: 1px solid #CBD5E1 !important;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: not-allowed !important;
+  opacity: 0.88;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+.btn-locked-session i {
+  color: #94A3B8;
+  font-size: 1rem;
+}
+
+/* Table */
+.fm-table th {
+  background-color: #F8FAFC;
+  color: #64748B;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--fm-border);
+}
+.fm-table td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+  font-size: 0.925rem;
+}

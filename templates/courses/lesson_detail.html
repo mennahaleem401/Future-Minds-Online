@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}الدرس {{ lesson.order }}: {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <span class="badge bg-primary-subtle text-primary fw-bold mb-1">الدرس {{ lesson.order }}</span>
+      <h3 class="fw-bold mb-1">{{ lesson.title }}</h3>
+      <p class="text-muted small mb-0">{{ course.title }} • مدة الشرح: {{ lesson.duration_mins }} دقيقة</p>
+    </div>
+    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-arrow-right ms-1"></i> رجوع للكورس
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="fm-card p-4 mb-4">
+      
+      {% if lesson.video_url %}
+      <div class="mb-4 rounded-3 p-3 bg-dark text-white text-center">
+        <p class="small mb-2">فيديو شرح مسجل للدرس</p>
+        <a href="{{ lesson.video_url }}" target="_blank" class="btn btn-sm btn-danger px-4">مشاهدة الفيديو</a>
+      </div>
+      {% endif %}
+
+      <h6 class="fw-bold mb-2">ملخص الدرس</h6>
+      <p class="text-secondary small mb-4">{{ lesson.summary }}</p>
+
+      <h6 class="fw-bold mb-2">كود الدرس والأمثلة</h6>
+      <div class="p-3 bg-light rounded-3 font-monospace small text-dark mb-4 text-start" dir="ltr" style="white-space: pre-wrap; line-height: 1.6;">{{ lesson.content }}</div>
+
+      <!-- مذكرات الدرس -->
+      {% if materials %}
+      <h6 class="fw-bold mb-2">ملفات الدرس</h6>
+      <div class="list-group list-group-flush mb-4">
+        {% for m in materials %}
+        <div class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+          <span class="small fw-bold text-dark">{{ m.title }}</span>
+          {% if m.file %}<a href="{{ m.file.url }}" download class="btn btn-sm btn-outline-primary py-0 px-2">تحميل</a>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- أزرار الواجب والكويز -->
+      <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between border">
+        <span class="fw-bold small text-dark">جاهز تختبر نفسك؟</span>
+        <div class="d-flex gap-2">
+          {% for a in assignments %}
+          <a href="{% url 'assignment_detail' a.id %}" class="btn btn-sm btn-warning text-dark fw-bold">
+            حل الواجب
+          </a>
+          {% endfor %}
+          {% for q in quizzes %}
+          <a href="{% url 'quiz_detail' q.id %}" class="btn btn-sm btn-success fw-bold">
+            كويز الدرس
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- قائمة الدروس الجانبية -->
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3">كل دروس الكورس</h6>
+      <div class="list-group list-group-flush">
+        {% for l in all_lessons %}
+        <a href="{% url 'lesson_detail' course.id l.id %}" class="list-group-item list-group-item-action px-2 py-2 d-flex align-items-center justify-content-between border-0 rounded-2 mb-1 {% if l.id == lesson.id %}bg-primary text-white fw-bold{% endif %}">
+          <span class="small text-truncate">{{ l.order }}. {{ l.title }}</span>
+          <span class="small {% if l.id == lesson.id %}text-white-50{% else %}text-muted{% endif %}">{{ l.duration_mins }}د</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

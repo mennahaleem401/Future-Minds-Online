@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}ميعاد حصة جديدة{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-7">
+    <div class="fm-card p-4 p-md-5">
+      <h4 class="fw-bold mb-1">جدولة ميعاد حصة جديدة</h4>
+      <p class="text-muted small mb-4">تحديد وقت الحصة ورابط جوجل ميت وإضافة الطلاب المشتركين.</p>
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label small fw-bold">الكورس</label>
+          <select name="course_id" class="form-select" required>
+            <option value="">-- اختر الكورس --</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}">{{ c.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">المدرس</label>
+          <select name="instructor_id" class="form-select" required>
+            {% for inst in instructors %}
+            <option value="{{ inst.id }}">م/ {{ inst.user.display_name }} ({{ inst.specialization }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">عنوان الحصة</label>
+          <input type="text" name="title" class="form-control" placeholder="مثال: بايثون - حصة اللوبس وحل المسائل المباشرة" required>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold">تاريخ الحصة</label>
+            <input type="date" name="scheduled_date" class="form-control" required>
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label small fw-bold">وقت البدء</label>
+            <input type="time" name="start_time" class="form-control" required>
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label small fw-bold">وقت الانتهاء</label>
+            <input type="time" name="end_time" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">رابط جوجل ميت (Google Meet)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="fa-brands fa-google text-danger"></i></span>
+            <input type="url" name="google_meet_link" class="form-control text-start" dir="ltr" value="https://meet.google.com/qrs-tuvw-xyz" required>
+          </div>
+          <div class="form-text small">الطلاب هيدخلوا على الرابط ده أول ما يضغطوا [ ادخل الحصة ].</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold d-flex justify-content-between">
+            <span>الطلاب المشتركين في الحصة</span>
+            <span class="text-muted" style="font-size: 0.75rem;">(تقدر تختار أكتر من طالب بالضغط على Ctrl)</span>
+          </label>
+          <select name="students" class="form-select" multiple size="4" required>
+            {% for st in students %}
+            <option value="{{ st.id }}">
+              {{ st.user.display_name }} ({{ st.get_learning_mode_display }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'classes_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary">حفظ ميعاد الحصة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

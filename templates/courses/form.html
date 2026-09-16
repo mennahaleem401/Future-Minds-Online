@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}{% if course %}تعديل الكورس{% else %}إضافة كورس جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-9">
+    <div class="fm-card p-4 p-md-5">
+      <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+        <div>
+          <h4 class="fw-bold mb-1">{% if course %}تعديل: {{ course.title }}{% else %}إضافة كورس جديد مع الجدولة التلقائية{% endif %}</h4>
+          <p class="text-muted small mb-0">بيانات الكورس الأساسية ومواعيد الحصص الدورية لإنشائها تلقائياً.</p>
+        </div>
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 fs-6">
+          <i class="fa-solid fa-shield-halved ms-1"></i> صلاحية الأدمن فقط
+        </span>
+      </div>
+      
+      <form method="POST">
+        {% csrf_token %}
+        
+        <!-- البيانات الأساسية للكورس -->
+        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-book-open text-primary ms-2"></i> بيانات الكورس</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-8">
+            <label class="form-label small fw-bold">اسم الكورس <span class="text-danger">*</span></label>
+            <input type="text" name="title" value="{{ course.title|default:'' }}" class="form-control" placeholder="مثال: بايثون للناشئين والمبتدئين" required>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold">المدرس المسئول <span class="text-danger">*</span></label>
+            <select name="instructor_id" class="form-select" required>
+              <option value="">-- اختر المدرس --</option>
+              {% for inst in instructors %}
+              <option value="{{ inst.id }}" {% if course.instructor.id == inst.id %}selected{% endif %}>
+                م/ {{ inst.user.display_name }} ({{ inst.specialization }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label small fw-bold">وصف الكورس <span class="text-danger">*</span></label>
+            <textarea name="description" class="form-control" rows="2" placeholder="محتوى الكورس، الفئة العمرية والمستوى المستهدف..." required>{{ course.description|default:'' }}</textarea>
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_active" id="activeSwitch" {% if not course or course.is_active %}checked{% endif %}>
+              <label class="form-check-label small fw-bold" for="activeSwitch">الكورس نشط ومتاح للطلاب</label>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- إعدادات الجدولة التلقائية للحصص -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-calendar-days text-purple ms-2"></i> الجدولة التلقائية للحصص
+          </h6>
+          <span class="badge bg-light text-muted border">توليد الحصص بنسخ متطابقة</span>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 border mb-4">
+          <label class="form-label small fw-bold d-block mb-2">أيام الحصص في الأسبوع (اختر يوم أو أكثر) <span class="text-danger">*</span></label>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            {% for code, name in days_choices %}
+            <div class="form-check form-check-inline border rounded-2 px-3 py-2 bg-white m-0">
+              <input class="form-check-input" type="checkbox" name="schedule_days" value="{{ code }}" id="day_{{ code }}" {% if code in selected_days %}checked{% endif %}>
+              <label class="form-check-label small fw-bold text-dark" for="day_{{ code }}">{{ name }}</label>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold">تاريخ أول حصة</label>
+              <input type="date" name="start_date" value="{{ course.start_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold">وقت بدء الحصة</label>
+              <input type="time" name="start_time" value="{{ course.default_start_time|time:'H:i'|default:'17:00' }}" class="form-control">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold">وقت انتهاء الحصة</label>
+              <input type="time" name="end_time" value="{{ course.default_end_time|time:'H:i'|default:'18:30' }}" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label small fw-bold">رابط جوجل ميت لحصص الكورس</label>
+              <input type="url" name="default_meet_link" value="{{ course.default_meet_link|default:'https://meet.google.com/abc-defg-hij' }}" class="form-control" placeholder="https://meet.google.com/...">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold">إجمالي عدد الحصص المطلوبة</label>
+              <input type="number" name="total_sessions_count" value="{{ course.total_sessions_count|default:8 }}" min="1" max="50" class="form-control">
+            </div>
+          </div>
+
+          {% if not course %}
+          <div class="mt-3 pt-3 border-top">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="auto_generate_sessions" id="autoGenCheck" checked>
+              <label class="form-check-label small fw-bold text-primary" for="autoGenCheck">
+                <i class="fa-solid fa-wand-magic-sparkles ms-1"></i> توليد جميع الحصص الـ 8 تلقائياً فور حفظ الكورس
+              </label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- تقييد الطلاب في الكورس -->
+        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users text-primary ms-2"></i> تسجيل الطلاب في الكورس (اختياري)</h6>
+        <div class="p-3 bg-light rounded-3 border mb-4" style="max-height: 200px; overflow-y: auto;">
+          <div class="row g-2">
+            {% for st in all_students %}
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="enrolled_students" value="{{ st.id }}" id="st_{{ st.id }}" {% if st.id in current_enrolled_ids %}checked{% endif %}>
+                <label class="form-check-label small" for="st_{{ st.id }}">
+                  <strong>{{ st.user.display_name }}</strong>
+                  <span class="text-muted">({{ st.get_learning_mode_display }})</span>
+                </label>
+              </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-muted small">مفيش طلاب مسجلين في النظام حالياً.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'courses_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary px-4">
+            <i class="fa-solid fa-check ms-1"></i> حفظ الكورس والجدولة
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

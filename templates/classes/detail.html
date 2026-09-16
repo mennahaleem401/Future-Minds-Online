@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% block title %}{{ session.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+        <span class="badge bg-light text-primary border fw-bold">حصة #{{ session.session_number }}</span>
+        {% if session.status == 'SCHEDULED' %}
+          <span class="badge bg-primary-subtle text-primary">مجدولة</span>
+        {% elif session.status == 'ONGOING' %}
+          <span class="badge bg-success text-white">شغالة دلوقتي</span>
+        {% elif session.status == 'COMPLETED' %}
+          <span class="badge bg-secondary text-white">انتهت الحصة</span>
+        {% endif %}
+        <a href="{% url 'course_detail' session.course.id %}" class="badge bg-light text-dark border text-decoration-none">
+          {{ session.course.title }}
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h3 class="fw-bold mb-0 text-dark">{{ session.title }}</h3>
+        {% if can_manage %}
+        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editTitleModal" title="تعديل اسم الحصة فقط">
+          <i class="fa-solid fa-pen ms-1"></i> تعديل الاسم
+        </button>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0 mt-1">المدرس: م/ {{ session.instructor.user.display_name }} • اليوم: {{ session.scheduled_date|date:"l, d F Y" }}</p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      {% if user.is_student_role and session.status != 'COMPLETED' %}
+        {% if session.is_time_reached %}
+          <a href="{% url 'join_class' session.id %}" target="_blank" class="btn btn-join-class">
+            <i class="fa-solid fa-video"></i> ادخل الحصة
+          </a>
+        {% elif session.is_before_time %}
+          <button class="btn btn-secondary disabled" disabled title="يفتح الزرار تلقائياً في ميعاد الحصة">
+            <i class="fa-solid fa-lock ms-1"></i> تبدأ الحصة الساعة {{ session.start_time|time:"g:i A" }}
+          </button>
+        {% endif %}
+      {% elif can_manage %}
+        {% if session.is_time_reached or user.is_admin_role %}
+          <a href="{% url 'join_class' session.id %}" target="_blank" class="btn btn-outline-primary btn-sm">
+            <i class="fa-solid fa-video ms-1"></i> فتح جوجل ميت
+          </a>
+        {% elif session.is_before_time %}
+          <button class="btn btn-outline-secondary btn-sm disabled" disabled title="يفتح ميت تلقائياً في ميعاد الحصة">
+            <i class="fa-solid fa-lock ms-1"></i> ميت يفتح {{ session.start_time|time:"g:i A" }}
+          </button>
+        {% endif %}
+        {% if session.status != 'COMPLETED' %}
+        <button type="button" class="btn btn-fm-primary btn-sm" data-bs-toggle="modal" data-bs-target="#completeModal">
+          <i class="fa-solid fa-flag-checkered ms-1"></i> إنهاء الحصة وتثبيت الحضور
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#postClassModal">
+          <i class="fa-solid fa-pen-to-square ms-1"></i> تعديل الشرح والواجب
+        </button>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    
+    <!-- ميعاد الحصة ورابط الدخول -->
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-3">ميعاد الحصة ورابط الدخول</h6>
+      <div class="row g-3">
+        <div class="col-6 col-md-4">
+          <span class="text-muted small d-block">تاريخ ويوم الحصة</span>
+          <strong class="text-dark">{{ session.scheduled_date|date:"l, d M Y" }}</strong>
+        </div>
+        <div class="col-6 col-md-4">
+          <span class="text-muted small d-block">وقت الحصة</span>
+          <strong class="text-dark">{{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}</strong>
+        </div>
+        <div class="col-12 col-md-4">
+          <span class="text-muted small d-block">رابط جوجل ميت</span>
+          {% if session.is_time_reached or user.is_admin_role %}
+            <a href="{{ session.google_meet_link }}" target="_blank" class="small text-truncate d-block text-primary">
+              {{ session.google_meet_link }}
+            </a>
+          {% else %}
+            <span class="small text-muted">
+              <i class="fa-solid fa-lock ms-1"></i> يظهر الرابط وقت الحصة فقط
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- شرح الحصة وملخصها / ملزمة الشرح -->
+    <div class="fm-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">
+          <i class="fa-solid fa-file-lines text-primary ms-2"></i> شرح وملخص الحصة (الملزمة)
+        </h6>
+        <div class="d-flex align-items-center gap-2">
+          {% if user.is_student_role %}
+            {% if is_lesson_completed %}
+              <span class="badge bg-success-subtle text-success border border-success">
+                <i class="fa-solid fa-circle-check ms-1"></i> تم إتمام الدرس (حضور + ملزمة)
+              </span>
+            {% elif my_attendance and my_attendance.status in 'PRESENT,LATE' %}
+              <span class="badge bg-warning-subtle text-dark border border-warning">
+                <i class="fa-solid fa-download ms-1"></i> حمّل الملزمة لإتمام الدرس
+              </span>
+            {% endif %}
+          {% endif %}
+
+          {% if session.summary or session.summary_file %}
+            <span class="badge bg-success-subtle text-success">متاح للطلاب</span>
+          {% else %}
+            <span class="badge bg-light text-muted border">لم يُضف بعد</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if session.summary_file %}
+        <div class="p-3 bg-light rounded-3 border mb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 shadow-sm">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="fa-solid fa-file-pdf fs-3"></i>
+            </div>
+            <div>
+              <strong class="text-dark d-block mb-1">ملزمة / ملف شرح الحصة</strong>
+              <span class="text-muted small">
+                <i class="fa-solid fa-paperclip ms-1"></i> {{ session.summary_file.name }}
+              </span>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <a href="{% url 'session_download_booklet' session.id %}" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap">
+              <i class="fa-solid fa-eye ms-1"></i> عرض الملف
+            </a>
+            <a href="{% url 'session_download_booklet' session.id %}" class="btn btn-sm btn-fm-primary text-nowrap">
+              <i class="fa-solid fa-download ms-1"></i> تحميل الملزمة
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if session.summary %}
+        <div class="p-3 bg-light rounded-3 border">
+          {% if session.summary_file %}
+            <span class="text-muted small fw-bold d-block mb-1"><i class="fa-solid fa-note-sticky ms-1 text-warning"></i> ملاحظات ونقاط الشرح:</span>
+          {% endif %}
+          <p class="mb-0 text-dark small" style="white-space: pre-wrap;">{{ session.summary }}</p>
+        </div>
+      {% endif %}
+
+      {% if not session.summary and not session.summary_file %}
+        <div class="text-center py-3 text-muted bg-light bg-opacity-50 rounded-3 border small">
+          {% if session.status == 'COMPLETED' %}
+            لم يُضف المدرس ملزمة أو شرحاً بعد لهذه الحصة.
+            {% if can_manage %}
+            <br>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#postClassModal">
+              <i class="fa-solid fa-plus ms-1"></i> رفع ملزمة الشرح الآن
+            </button>
+            {% endif %}
+          {% else %}
+            شرح وملزمة الحصة يرفعها المدرس فور انتهاء الحصة.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- واجب الحصة (Homework) -->
+    <div class="fm-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">
+          <i class="fa-solid fa-list-check text-warning ms-2"></i> واجب الحصة
+        </h6>
+        <div class="d-flex align-items-center gap-2">
+          {% if assignments %}
+            <span class="badge bg-warning-subtle text-dark">{{ assignments.count }} واجب متاح</span>
+            {% if can_manage and session.status == 'COMPLETED' %}
+            <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" data-bs-toggle="modal" data-bs-target="#postClassModal">
+              <i class="fa-solid fa-pen-to-square ms-1"></i> تعديل الواجب والملف
+            </button>
+            {% endif %}
+          {% else %}
+            <span class="badge bg-light text-muted border">مفيش واجب</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if assignments %}
+        {% for hw in assignments %}
+        <div class="p-3 bg-light rounded-3 border mb-2 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <strong class="text-dark d-block mb-1">{{ hw.title }}</strong>
+            <p class="text-muted small mb-1">{{ hw.description|truncatewords:20 }}</p>
+            <span class="small text-danger">
+              <i class="fa-regular fa-clock ms-1"></i> آخر ميعاد للتسليم: {{ hw.due_date|date:"l, d M Y - g:i A" }}
+            </span>
+          </div>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            {% if hw.starter_file %}
+            <a href="{{ hw.starter_file.url }}" download class="btn btn-sm btn-outline-secondary text-nowrap">
+              <i class="fa-solid fa-file-arrow-down ms-1 text-primary"></i> تحميل ملف الواجب
+            </a>
+            {% endif %}
+            <a href="{% url 'assignment_detail' hw.id %}" class="btn btn-sm btn-fm-primary text-nowrap">
+              عرض تفاصيل الواجب
+            </a>
+            {% if can_manage and session.status == 'COMPLETED' %}
+            <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#postClassModal">
+              <i class="fa-solid fa-pen ms-1"></i> تعديل
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center py-3 text-muted bg-light bg-opacity-50 rounded-3 border small">
+          {% if session.status == 'COMPLETED' %}
+            مفيش واجب مضاف للحصة دي.
+            {% if can_manage %}
+            <br>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#postClassModal">
+              <i class="fa-solid fa-plus ms-1"></i> أضف واجب للحصة
+            </button>
+            {% endif %}
+          {% else %}
+            واجب الحصة يضيفه المدرس فور انتهاء الحصة.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- تسجيل الحصة -->
+    <div class="fm-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-film text-purple ms-2"></i> تسجيل الحصة</h6>
+        {% if recording and recording.is_available %}
+          <span class="badge bg-success-subtle text-success">متاح للمشاهدة</span>
+        {% else %}
+          <span class="badge bg-light text-muted border">التسجيل غير متاح</span>
+        {% endif %}
+      </div>
+
+      {% if recording and recording.is_available %}
+        <div class="p-3 bg-light rounded-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 border">
+          <div>
+            <strong class="text-dark d-block mb-1">{{ recording.title }}</strong>
+            <p class="text-muted small mb-0">{{ recording.notes|default:"تسجيل الحصة المباشرة لمراجعة الشرح في أي وقت." }}</p>
+          </div>
+          <a href="{{ recording.recording_url }}" target="_blank" class="btn btn-fm-primary btn-sm text-nowrap">
+            <i class="fa-solid fa-circle-play ms-1"></i> مشاهدة التسجيل
+          </a>
+        </div>
+      {% else %}
+        <div class="text-center py-3 text-muted bg-light bg-opacity-50 rounded-3 border small">
+          مفيش تسجيل مرفوع للحصة دي حالياً. (التسجيل اختياري).
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- كشف الحضور (للأدمن والمدرس فقط - لا يظهر للطالب نهائياً) -->
+    {% if can_manage %}
+    <div class="fm-card p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-clipboard-user text-primary ms-2"></i> كشف حضور الحصة</h6>
+        <a href="{% url 'attendance_session' session.id %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-pen-to-square ms-1"></i> تعديل الحضور يدوياً
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>النوع</th>
+              <th>وقت الدخول</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attendances %}
+            <tr>
+              <td>
+                <strong class="text-dark">{{ att.student.user.display_name }}</strong>
+              </td>
+              <td>
+                {% if att.student.learning_mode == 'ONLINE' %}
+                  <span class="badge badge-online">أونلاين</span>
+                {% else %}
+                  <span class="badge badge-offline">في المقر</span>
+                {% endif %}
+              </td>
+              <td class="small">
+                {% if att.join_time %}
+                  {{ att.join_time|date:"g:i:s A" }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if att.status == 'PRESENT' %}
+                  <span class="badge badge-present"><i class="fa-solid fa-check ms-1"></i> حاضر</span>
+                {% elif att.status == 'LATE' %}
+                  <span class="badge badge-late"><i class="fa-solid fa-clock ms-1"></i> متأخر</span>
+                {% else %}
+                  <span class="badge badge-absent"><i class="fa-solid fa-xmark ms-1"></i> غايب</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-3 text-muted small">مفيش طلاب في الحصة دي.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="col-12 col-lg-4">
+    {% if can_manage %}
+    <div class="fm-card p-4 mb-4">
+      <h6 class="fw-bold mb-2"><i class="fa-solid fa-circle-info text-primary ms-1"></i> صلاحيات المدرس</h6>
+      <ul class="list-unstyled small text-secondary mb-0">
+        <li class="mb-2"><i class="fa-solid fa-check text-success ms-2"></i> تعديل اسم الحصة لتوضيح موضوعها.</li>
+        <li class="mb-2"><i class="fa-solid fa-check text-success ms-2"></i> إضافة شرح الحصة والواجب والتسجيل بعد الانتهاء.</li>
+        <li><i class="fa-solid fa-lock text-muted ms-2"></i> مواعيد الحصص وجدولتها ثابتة ومحددة من الإدارة.</li>
+      </ul>
+    </div>
+
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-2"><i class="fa-solid fa-bolt text-warning ms-1"></i> الحضور التلقائي</h6>
+      <p class="small text-muted mb-2">النظام بيحدد الحضور فور ضغط الطالب على زرار <strong>[ ادخل الحصة ]</strong>:</p>
+      <ul class="list-unstyled small text-secondary mb-0">
+        <li class="mb-2"><i class="fa-solid fa-check text-success ms-2"></i> <strong>حاضر:</strong> لو دخل في الميعاد أو أول 5 دقايق.</li>
+        <li class="mb-2"><i class="fa-solid fa-clock text-warning ms-2"></i> <strong>متأخر:</strong> لو دخل بعد أول 5 دقايق.</li>
+        <li><i class="fa-solid fa-xmark text-danger ms-2"></i> <strong>غايب:</strong> لو مدخلش الحصة خالص.</li>
+      </ul>
+    </div>
+    {% else %}
+    <!-- كارت للمدرس والكورس يظهر للطالب -->
+    <div class="fm-card p-4 mb-4 text-center">
+      <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center fw-bold fs-3 mb-2" style="width: 60px; height: 60px;">
+        {{ session.instructor.user.first_name|default:"I"|slice:":1"|upper }}
+      </div>
+      <h6 class="fw-bold mb-1">م/ {{ session.instructor.user.display_name }}</h6>
+      <span class="badge bg-light text-primary border mb-2">{{ session.instructor.specialization }}</span>
+      <p class="text-muted small mb-0">{{ session.course.title }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- نافذة تعديل اسم الحصة فقط للمدرس والأدمن -->
+{% if can_manage %}
+<div class="modal fade" id="editTitleModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen text-primary ms-1"></i> تعديل اسم الحصة</h5>
+        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'session_update_title' session.id %}">
+        {% csrf_token %}
+        <div class="modal-body py-3">
+          <p class="small text-muted mb-3">يمكنك تعديل اسم الحصة ليعبر عن موضوع الدرس المشروح (الميعاد والتاريخ ثابتان).</p>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">اسم الحصة</label>
+            <input type="text" name="title" value="{{ session.title }}" class="form-control" required placeholder="مثال: حصة 1: أساسيات بايثون والمتغيرات">
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-fm-primary">حفظ الاسم الجديد</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة إنهاء الحصة (مع إتاحة كتابة الشرح والواجب والتسجيل) -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-flag-checkered text-primary ms-1"></i> إنهاء الحصة وتثبيت الحضور</h5>
+          <p class="text-muted small mb-0">إنهاء الحصة يسجل الغائبين تلقائياً ويتيح لك إضافة شرح الحصة والواجب ورابط التسجيل.</p>
+        </div>
+        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'complete_class' session.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body py-3">
+          
+          <div class="mb-3">
+            <label class="form-label small fw-bold">
+              <i class="fa-solid fa-file-pdf text-danger ms-1"></i> رفع ملزمة / ملف شرح الحصة (PDF أو مستند)
+            </label>
+            <input type="file" name="summary_file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.png,.jpg,.jpeg">
+            <span class="small text-muted">تقدر ترفع ملزمة الحصة، ملف PDF، أو أي ملفات شرح للطلاب.</span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">شرح وملخص أو ملاحظات الدرس (اختياري)</label>
+            <textarea name="summary" class="form-control" rows="3" placeholder="اكتب ملخص ما تم شرحه والنقاط الأساسية للطلاب...">{{ session.summary }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">رابط تسجيل الحصة (اختياري)</label>
+            <input type="url" name="recording_url" value="{{ recording.recording_url|default:'' }}" class="form-control" placeholder="https://meet.google.com/... أو رابط جوجل درايف">
+          </div>
+
+          <hr class="my-3">
+
+          <h6 class="fw-bold small mb-2"><i class="fa-solid fa-list-check text-warning ms-1"></i> إضافة واجب الحصة (اختياري)</h6>
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-7">
+              <label class="form-label small text-muted">عنوان الواجب (اختياري)</label>
+              <input type="text" name="assignment_title" class="form-control form-control-sm" placeholder="مثال: واجب {{ session.title }}">
+            </div>
+            <div class="col-12 col-md-5">
+              <label class="form-label small text-muted">آخر ميعاد للتسليم</label>
+              <input type="datetime-local" name="assignment_due_date" class="form-control form-control-sm">
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">المطلوب من الطالب (اختياري)</label>
+              <textarea name="assignment_description" class="form-control form-control-sm" rows="2" placeholder="المطلوب حله أو تنفيذه..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">إرفاق ملف للواجب (اختياري)</label>
+              <input type="file" name="starter_file" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.png,.jpg,.jpeg">
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-fm-primary px-4">تأكيد إنهاء الحصة وحفظ المحتوى</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تعديل الشرح والواجب بعد انتهاء الحصة -->
+<div class="modal fade" id="postClassModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square text-primary ms-1"></i> تحديث شرح الحصة والواجب والتسجيل</h5>
+          <p class="text-muted small mb-0">يمكنك تحديث المحتوى التعليمي والواجبات المرتبطة بهذه الحصة في أي وقت.</p>
+        </div>
+        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'session_post_class_update' session.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body py-3">
+          
+          <div class="mb-3">
+            <label class="form-label small fw-bold">
+              <i class="fa-solid fa-file-pdf text-danger ms-1"></i> رفع ملزمة / ملف شرح الحصة (PDF أو مستند)
+            </label>
+            <input type="file" name="summary_file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.png,.jpg,.jpeg">
+            {% if session.summary_file %}
+            <span class="small text-muted mt-1 d-block">
+              <i class="fa-solid fa-paperclip ms-1 text-primary"></i> الملزمة الحالية: 
+              <a href="{{ session.summary_file.url }}" target="_blank" class="text-primary fw-bold text-decoration-none">{{ session.summary_file.name }}</a>
+            </span>
+            {% else %}
+            <span class="small text-muted">تقدر ترفع ملزمة الحصة، ملف PDF، أو أي ملفات شرح للطلاب.</span>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">شرح وملخص أو ملاحظات الدرس (اختياري)</label>
+            <textarea name="summary" class="form-control" rows="3" placeholder="اكتب ملخص ما تم شرحه والنقاط الأساسية للطلاب...">{{ session.summary }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">رابط تسجيل الحصة</label>
+            <input type="url" name="recording_url" value="{{ recording.recording_url|default:'' }}" class="form-control" placeholder="https://meet.google.com/... أو رابط جوجل درايف">
+          </div>
+
+          <hr class="my-3">
+
+          <h6 class="fw-bold small mb-2"><i class="fa-solid fa-list-check text-warning ms-1"></i> إضافة أو تحديث واجب الحصة</h6>
+          {% with first_hw=assignments.first %}
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-7">
+              <label class="form-label small text-muted">عنوان الواجب (اختياري - افتراضياً: واجب {{ session.title }})</label>
+              <input type="text" name="assignment_title" value="{{ first_hw.title|default:'' }}" class="form-control form-control-sm" placeholder="مثال: واجب {{ session.title }}">
+            </div>
+            <div class="col-12 col-md-5">
+              <label class="form-label small text-muted">آخر ميعاد للتسليم</label>
+              <input type="datetime-local" name="assignment_due_date" value="{{ first_hw.due_date|date:'Y-m-d\TH:i' }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">المطلوب من الطالب (اختياري)</label>
+              <textarea name="assignment_description" class="form-control form-control-sm" rows="2" placeholder="المطلوب حله أو تنفيذه...">{{ first_hw.description|default:'' }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">ملف الواجب (PowerPoint, PDF, Word, إلخ)</label>
+              <input type="file" name="starter_file" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.png,.jpg,.jpeg">
+              {% if first_hw.starter_file %}
+              <div class="mt-2 p-2 bg-light rounded border d-flex align-items-center justify-content-between">
+                <span class="small text-muted">
+                  <i class="fa-solid fa-paperclip text-primary ms-1"></i> الملف الحالي:
+                  <strong class="text-dark">{{ first_hw.starter_file.name }}</strong>
+                </span>
+                <a href="{{ first_hw.starter_file.url }}" download class="btn btn-sm btn-outline-secondary py-0 px-2 small">
+                  <i class="fa-solid fa-download ms-1"></i> تحميل
+                </a>
+              </div>
+              <span class="small text-muted mt-1 d-block">💡 اختر ملف جديد إذا أردت استبدال ملف الواجب الحالي، أو اتركه فارغاً للإبقاء عليه.</span>
+              {% else %}
+              <span class="small text-muted mt-1 d-block">تقدر ترفع ملف الواجب بصيغة PowerPoint، PDF، Word، أو أرشيف مضغوط.</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endwith %}
+
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-fm-primary px-4">حفظ التحديثات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

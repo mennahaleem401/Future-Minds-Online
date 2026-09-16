@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}الحصص والمواعيد{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">الحصص والمواعيد</h3>
+    <p class="text-muted small mb-0">حصص جوجل ميت المباشرة وكشف الحضور والتسجيلات.</p>
+  </div>
+  {% if user.is_admin_role %}
+  <a href="{% url 'class_create' %}" class="btn btn-fm-primary btn-sm">
+    <i class="fa-solid fa-plus ms-1"></i> ميعاد حصة جديدة
+  </a>
+  {% endif %}
+</div>
+
+<!-- الحصص القادمة -->
+<div class="fm-card p-4 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="fw-bold mb-0"><i class="fa-solid fa-calendar-days text-primary ms-2"></i> الحصص الجاية</h5>
+    <span class="badge bg-primary-subtle text-primary">{{ upcoming_sessions.count }} حصص</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table fm-table">
+      <thead>
+        <tr>
+          <th>الحصة</th>
+          <th>الكورس</th>
+          <th>المدرس</th>
+          <th>اليوم والميعاد</th>
+          <th>الطلاب</th>
+          <th>الحالة</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in upcoming_sessions %}
+        <tr>
+          <td><strong class="text-dark">{{ s.title }}</strong></td>
+          <td class="small text-muted">{{ s.course.title }}</td>
+          <td>م/ {{ s.instructor.user.display_name }}</td>
+          <td>
+            <div class="fw-bold small text-dark">{{ s.scheduled_date|date:"D, d M" }}</div>
+            <div class="text-muted small">{{ s.start_time|time:"g:i A" }}</div>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ s.students.count }} طلاب</span></td>
+          <td>
+            {% if s.status == 'SCHEDULED' %}
+              <span class="badge bg-primary-subtle text-primary">مجدولة</span>
+            {% elif s.status == 'ONGOING' %}
+              <span class="badge bg-success text-white">شغالة دلوقتي</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary">{{ s.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              {% if user.is_student_role %}
+                {% if s.is_time_reached %}
+                  <a href="{% url 'join_class' s.id %}" target="_blank" class="btn btn-sm btn-success fw-bold">
+                    <i class="fa-solid fa-video ms-1"></i> ادخل الحصة
+                  </a>
+                {% else %}
+                  <span class="badge bg-light text-muted border py-1 px-2 align-self-center" title="الزرار هيفتح في ميعاد الحصة">
+                    <i class="fa-solid fa-lock ms-1"></i> مغلق للميعاد
+                  </span>
+                {% endif %}
+              {% endif %}
+              <a href="{% url 'class_detail' s.id %}" class="btn btn-sm btn-outline-secondary">
+                التفاصيل
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted small">مفيش حصص قادمة حالياً.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- الحصص السابقة -->
+<div class="fm-card p-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="fw-bold mb-0 text-secondary"><i class="fa-solid fa-clock-rotate-left ms-2"></i> أرشيف الحصص السابقة</h5>
+    <span class="badge bg-secondary-subtle text-secondary">{{ past_sessions.count }} حصة</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table fm-table">
+      <thead>
+        <tr>
+          <th>الحصة</th>
+          <th>الكورس</th>
+          <th>المدرس</th>
+          <th>التاريخ</th>
+          <th>الحالة</th>
+          <th>الشرح والملزمة</th>
+          <th>التسجيل</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in past_sessions %}
+        <tr>
+          <td><strong class="text-dark">{{ s.title }}</strong></td>
+          <td class="small text-muted">{{ s.course.title }}</td>
+          <td class="small">م/ {{ s.instructor.user.display_name }}</td>
+          <td class="small">
+            <div class="fw-bold text-dark">{{ s.scheduled_date|date:"D, d M Y" }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">{{ s.start_time|time:"g:i A" }}</div>
+          </td>
+          <td>
+            {% if s.status == 'COMPLETED' %}
+              <span class="badge bg-secondary text-white">انتهت الحصة</span>
+            {% else %}
+              <span class="badge bg-light text-muted border">{{ s.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.summary_file %}
+              <span class="badge bg-primary-subtle text-primary mb-1 d-block"><i class="fa-solid fa-paperclip ms-1"></i> ملزمة متاحة</span>
+            {% endif %}
+            {% if s.summary %}
+              <span class="badge bg-success-subtle text-success d-block"><i class="fa-solid fa-file-lines ms-1"></i> تم الشرح</span>
+            {% endif %}
+            {% if not s.summary and not s.summary_file %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.recording and s.recording.is_available %}
+              <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-play ms-1"></i> متاح</span>
+            {% else %}
+              <span class="badge bg-light text-muted border">غير متاح</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'class_detail' s.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2">
+              التفاصيل
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted small">مفيش حصص سابقة في الأرشيف حالياً.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

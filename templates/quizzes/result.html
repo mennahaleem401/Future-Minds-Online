@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}نتيجة الكويز - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-7">
+    <div class="fm-card p-4 p-md-5 text-center mb-4">
+      
+      {% if already_submitted %}
+        <div class="alert alert-warning py-2 small mb-3">
+          <i class="fa-solid fa-circle-exclamation ms-1"></i> لقد أتممت هذا الكويز مسبقاً، وهذه نتيجتك المسجلة. (المحاولة لمرة واحدة فقط).
+        </div>
+      {% endif %}
+
+      {% if attempt.passed %}
+        <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center fs-1 mb-2" style="width: 70px; height: 70px;">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h4 class="fw-bold text-success mb-1">مبروك يا بطل! نجحت في الكويز 🎉</h4>
+        <p class="text-muted small">عديت نسبة النجاح المطلوبة ({{ quiz.passing_percentage }}%).</p>
+      {% else %}
+        <div class="rounded-circle bg-danger-subtle text-danger d-inline-flex align-items-center justify-content-center fs-1 mb-2" style="width: 70px; height: 70px;">
+          <i class="fa-solid fa-check-circle"></i>
+        </div>
+        <h4 class="fw-bold text-danger mb-1">تم تسجيل محاولتك في الكويز</h4>
+        <p class="text-muted small">النسبة المطلوبة للنجاح {{ quiz.passing_percentage }}%.</p>
+      {% endif %}
+
+      <div class="p-3 bg-light rounded-4 d-inline-block text-end border my-3" style="min-width: 250px;">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">الدرجة:</span>
+          <strong class="text-dark">{{ attempt.score }} من {{ attempt.total_questions }} أسئلة</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">النسبة المئوية:</span>
+          <strong class="text-primary fs-5">{{ attempt.percentage }}%</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted small">التقدم الدراسي:</span>
+          <span class="badge bg-primary text-white">اتحدث تلقائي</span>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-center gap-2 mt-2">
+        <a href="{% url 'quizzes_list' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-arrow-right ms-1"></i> قائمة الكويزات
+        </a>
+        <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-sm btn-fm-primary">
+          <i class="fa-solid fa-circle-info ms-1"></i> تفاصيل الكويز
+        </a>
+      </div>
+    </div>
+
+    <!-- مراجعة الإجابات الصح -->
+    <div class="fm-card p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-list-check text-primary ms-2"></i> مراجعة الإجابات النموذجية</h6>
+      
+      {% for q in questions %}
+      <div class="p-3 mb-2 rounded-3 border bg-light bg-opacity-25">
+        <div class="fw-bold text-dark small mb-1">{{ forloop.counter }}. {{ q.prompt }}</div>
+        <div class="small text-success fw-bold">
+          <i class="fa-solid fa-check ms-1"></i> الإجابة الصحيحة: ({{ q.correct_option }})
+        </div>
+        {% if q.explanation %}
+        <div class="text-muted small mt-1" style="font-size: 0.78rem;">
+          {{ q.explanation }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

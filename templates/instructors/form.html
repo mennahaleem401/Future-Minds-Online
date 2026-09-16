@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{% if instructor %}تعديل بيانات المدرس{% else %}إضافة مدرس جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-7">
+    <div class="fm-card p-4 p-md-5">
+      <h4 class="fw-bold mb-1">{% if instructor %}تعديل بيانات: م/ {{ instructor.user.display_name }}{% else %}إضافة مدرس جديد{% endif %}</h4>
+      <p class="text-muted small mb-4">تسجيل بيانات المدرس والتخصص وحساب الدخول.</p>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">الاسم الأول</label>
+            <input type="text" name="first_name" value="{{ instructor.user.first_name|default:'' }}" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">اسم العائلة</label>
+            <input type="text" name="last_name" value="{{ instructor.user.last_name|default:'' }}" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">اسم المستخدم</label>
+            <input type="text" name="username" value="{{ instructor.user.username|default:'' }}" class="form-control" {% if instructor %}readonly{% else %}required{% endif %}>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">البريد الإلكتروني</label>
+            <input type="email" name="email" value="{{ instructor.user.email|default:'' }}" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">كلمة السر {% if instructor %}(سيبها فاضية لو مش عايز تغيرها){% endif %}</label>
+            <input type="password" name="password" class="form-control" {% if not instructor %}required{% endif %}>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">رقم التليفون</label>
+            <input type="text" name="phone" value="{{ instructor.user.phone|default:'' }}" class="form-control">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">التخصص</label>
+          <input type="text" name="specialization" value="{{ instructor.specialization|default:'' }}" class="form-control" placeholder="مثال: بايثون وذكاء اصطناعي، روبوتكس، تطوير مواقع" required>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold">نبذة عن المدرس</label>
+          <textarea name="bio" class="form-control" rows="2" placeholder="الخبرة ومجال التدريس...">{{ instructor.bio|default:'' }}</textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'instructors_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary">حفظ المدرس</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

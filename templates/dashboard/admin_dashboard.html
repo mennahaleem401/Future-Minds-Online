@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة الإدارة{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">لوحة تحكم الأكاديمية</h3>
+    <p class="text-muted small mb-0">متابعة فورية للحضور والغياب والطلاب والحصص.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'class_create' %}" class="btn btn-fm-primary btn-sm">
+      <i class="fa-solid fa-plus ms-1"></i> ميعاد حصة
+    </a>
+    <a href="{% url 'student_add' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fa-solid fa-user-plus ms-1"></i> طالب جديد
+    </a>
+    <a href="{% url 'course_create' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fa-solid fa-folder-plus ms-1"></i> كورس جديد
+    </a>
+  </div>
+</div>
+
+<!-- كروت الأرقام الأساسية السريعة -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">إجمالي الطلاب</span>
+      <h3 class="fw-bold my-1 text-primary">{{ total_students }}</h3>
+      <span class="badge bg-primary-subtle text-primary small">مسجلين</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">أونلاين</span>
+      <h3 class="fw-bold my-1 text-info">{{ online_students }}</h3>
+      <span class="badge badge-online small">جوجل ميت</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">في المقر</span>
+      <h3 class="fw-bold my-1 text-purple" style="color: var(--fm-purple);">{{ offline_students }}</h3>
+      <span class="badge badge-offline small">حضور فعلي</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">المدرسين</span>
+      <h3 class="fw-bold my-1 text-success">{{ total_instructors }}</h3>
+      <span class="badge bg-success-subtle text-success small">فريق التدريس</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">الكورسات</span>
+      <h3 class="fw-bold my-1 text-warning">{{ total_courses }}</h3>
+      <span class="badge bg-warning-subtle text-warning small">نشطة</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="fm-stat-card">
+      <span class="text-muted small fw-bold">نسبة الحضور</span>
+      <h3 class="fw-bold my-1 text-dark">{{ attendance_rate }}%</h3>
+      <span class="badge bg-dark-subtle text-dark small">عام</span>
+    </div>
+  </div>
+</div>
+
+<!-- الرسوم البيانية البسيطة -->
+<div class="row g-4 mb-4">
+  <!-- توزيع الحضور -->
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-3 p-md-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">توزيع الحضور والغياب</h6>
+      </div>
+      <div style="height: 200px; position: relative;">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+      <div class="d-flex justify-content-around text-center mt-3 pt-2 border-top">
+        <div>
+          <span class="badge badge-present d-block mb-1">حاضر</span>
+          <strong class="small">{{ chart_attendance.0 }}</strong>
+        </div>
+        <div>
+          <span class="badge badge-late d-block mb-1">متأخر</span>
+          <strong class="small">{{ chart_attendance.1 }}</strong>
+        </div>
+        <div>
+          <span class="badge badge-absent d-block mb-1">غايب</span>
+          <strong class="small">{{ chart_attendance.2 }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- أونلاين مقابل المقر -->
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-3 p-md-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">أونلاين ولا في المقر</h6>
+      </div>
+      <div style="height: 200px; position: relative;">
+        <canvas id="modeChart"></canvas>
+      </div>
+      <div class="d-flex justify-content-around text-center mt-3 pt-2 border-top">
+        <div>
+          <span class="badge badge-online d-block mb-1">أونلاين</span>
+          <strong class="small">{{ online_students }}</strong>
+        </div>
+        <div>
+          <span class="badge badge-offline d-block mb-1">في المقر</span>
+          <strong class="small">{{ offline_students }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- مستوى الكورسات -->
+  <div class="col-12 col-lg-4">
+    <div class="fm-card p-3 p-md-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">متوسط تقدم الكورسات</h6>
+      </div>
+      <div style="height: 230px; position: relative;">
+        <canvas id="courseChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- الجداول: حصص النهاردة والتنبيهات -->
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="fm-card p-3 p-md-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-calendar-day text-primary ms-2"></i> حصص النهاردة</h6>
+        <a href="{% url 'classes_list' %}" class="small text-decoration-none" style="color: var(--fm-blue);">كل الحصص</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              <th>الحصة</th>
+              <th>المدرس</th>
+              <th>الميعاد</th>
+              <th>الحالة</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in today_sessions %}
+            <tr>
+              <td>
+                <strong class="text-dark">{{ session.title }}</strong>
+                <div class="text-muted small">{{ session.course.title }}</div>
+              </td>
+              <td>م/ {{ session.instructor.user.display_name }}</td>
+              <td>{{ session.start_time|time:"g:i A" }}</td>
+              <td>
+                {% if session.status == 'SCHEDULED' %}
+                  <span class="badge bg-primary-subtle text-primary">مجدولة</span>
+                {% elif session.status == 'ONGOING' %}
+                  <span class="badge bg-success-subtle text-success">شغالة حالياً</span>
+                {% elif session.status == 'COMPLETED' %}
+                  <span class="badge bg-secondary-subtle text-secondary">انتهت</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'class_detail' session.id %}" class="btn btn-sm btn-outline-primary py-0 px-2">إدارة</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-3 text-muted small">مفيش حصص مجدولة النهاردة.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="fm-card p-3 p-md-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0 text-danger"><i class="fa-solid fa-triangle-exclamation ms-2"></i> تنبيهات المتابعة</h6>
+        <span class="badge bg-danger-subtle text-danger">{{ system_alerts|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for alert in system_alerts %}
+        <div class="list-group-item px-0 py-2 border-bottom">
+          <div class="fw-bold small text-dark">{{ alert.title }}</div>
+          <p class="text-muted small mb-1">{{ alert.message }}</p>
+          <span class="text-muted" style="font-size: 0.72rem;">المدرس: م/ {{ alert.instructor.user.display_name }}</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-3 text-muted small">كل الطلاب ماشيين بانتظام!</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  new Chart(document.getElementById('attendanceChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['حاضر', 'متأخر', 'غايب'],
+      datasets: [{
+        data: {{ chart_attendance|safe }},
+        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  new Chart(document.getElementById('modeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['أونلاين', 'في المقر'],
+      datasets: [{
+        data: {{ chart_modes|safe }},
+        backgroundColor: ['#0284C7', '#7C3AED'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  new Chart(document.getElementById('courseChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ course_labels|safe }},
+      datasets: [{
+        label: 'متوسط التقدم %',
+        data: {{ course_perf_data|safe }},
+        backgroundColor: '#0077D4',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}

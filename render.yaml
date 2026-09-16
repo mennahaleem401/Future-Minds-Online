@@ -1,0 +1,28 @@
+databases:
+  - name: future-minds-db
+    databaseName: future_minds
+    user: future_minds_user
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: future-minds-academy
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn future_minds.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.4
+      - key: DATABASE_URL
+        fromDatabase:
+          name: future-minds-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"

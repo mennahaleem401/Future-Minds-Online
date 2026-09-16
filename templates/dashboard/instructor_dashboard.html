@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة المدرس{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">أهلاً يا م/ {{ instructor.user.first_name }} 👋</h3>
+    <p class="text-muted small mb-0">المادة: <span class="badge bg-light text-primary border">{{ instructor.specialization }}</span></p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'courses_list' %}" class="btn btn-fm-primary btn-sm">
+      <i class="fa-solid fa-book-open ms-1"></i> كورساتي وحصصها
+    </a>
+    <a href="{% url 'attendance_index' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fa-solid fa-clipboard-user ms-1"></i> كشف الحضور
+    </a>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-xl-8">
+    <!-- حصة النهاردة للمدرس -->
+    {% if my_classes_today %}
+      {% for session in my_classes_today %}
+      <div class="fm-card p-4 mb-3 border-end border-4 {% if session.is_time_reached %}border-success{% elif session.status == 'COMPLETED' %}border-secondary{% else %}border-warning{% endif %} bg-white">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              {% if session.status == 'COMPLETED' %}
+                <span class="badge bg-secondary text-white fw-bold">انتهت الحصة</span>
+              {% elif session.is_time_reached %}
+                <span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-circle-dot fa-fade ms-1"></i> ميعاد الحصة شغال</span>
+              {% else %}
+                <span class="badge bg-warning-subtle text-dark fw-bold"><i class="fa-solid fa-clock ms-1"></i> حصة لاحقة اليوم</span>
+              {% endif %}
+              <span class="badge bg-light text-dark border"><i class="fa-regular fa-clock ms-1"></i> {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}</span>
+              <span class="badge bg-light text-dark border"><i class="fa-solid fa-users ms-1"></i> {{ session.students.count }} طلاب</span>
+            </div>
+            <h4 class="fw-bold mb-1 text-dark">{{ session.title }}</h4>
+            <p class="text-muted small mb-0">{{ session.course.title }}</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            {% if session.status == 'COMPLETED' %}
+              <span class="badge bg-secondary-subtle text-secondary py-2 px-3">
+                <i class="fa-solid fa-check ms-1"></i> الحصة اكتملت
+              </span>
+            {% elif session.is_time_reached %}
+              <a href="{% url 'join_class' session.id %}" target="_blank" class="btn btn-join-class">
+                <i class="fa-solid fa-video ms-1"></i> ابدأ الحصة
+              </a>
+            {% else %}
+              <button type="button" class="btn btn-locked-session" disabled title="يفتح الزرار تلقائياً في ميعاد الحصة">
+                <i class="fa-solid fa-lock ms-1"></i> مقفول لميعاد الحصة ({{ session.start_time|time:"g:i A" }})
+              </button>
+            {% endif %}
+            <a href="{% url 'class_detail' session.id %}" class="btn btn-sm btn-outline-secondary">
+              التفاصيل
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="fm-card p-4 text-center py-4 text-muted mb-3">
+        <h6 class="fw-bold mb-1">مفيش حصص مجدولة النهاردة</h6>
+        <p class="small mb-0">الحصص مجدولة ومتاحة داخل كل كورس حسب مواعيد الأيام المحددة.</p>
+      </div>
+    {% endif %}
+
+    <!-- جدول طلابي المباشر -->
+    <div class="fm-card p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0">طلابي</h5>
+        <span class="badge bg-light text-dark border">{{ total_my_students }} طالب</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table fm-table">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>النوع</th>
+              <th>الحضور</th>
+              <th>الواجبات</th>
+              <th>التقدم</th>
+              <th>الملف</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in my_students %}
+            <tr>
+              <td>
+                <strong class="text-dark">{{ student.user.display_name }}</strong>
+                <div class="text-muted small" style="font-size: 0.72rem;">@{{ student.user.username }}</div>
+              </td>
+              <td>
+                {% if student.learning_mode == 'ONLINE' %}
+                  <span class="badge badge-online">أونلاين</span>
+                {% else %}
+                  <span class="badge badge-offline">في المقر</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="fw-bold small">{{ student.attendances.count }} حصص</span>
+              </td>
+              <td>
+                <span class="small">{{ student.submissions.count }} متسلم</span>
+              </td>
+              <td style="min-width: 100px;">
+                {% with pr=student.progress_records.first %}
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="fm-progress-bar flex-grow-1" style="height: 6px;">
+                      <div class="fm-progress-fill" style="width: {{ pr.overall_percentage|floatformat:0|default:0 }}%;"></div>
+                    </div>
+                    <span class="small fw-bold">{{ pr.overall_percentage|floatformat:0|default:0 }}%</span>
+                  </div>
+                {% endwith %}
+              </td>
+              <td>
+                <a href="{% url 'student_detail' student.id %}" class="btn btn-sm btn-light border py-0 px-2">عرض</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-3 text-muted small">مفيش طلاب مسجلين معاك حالياً.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- العمود الجانبي: تنبيهات وتصحيح -->
+  <div class="col-12 col-xl-4">
+    
+    <!-- تنبيهات الطلاب -->
+    <div class="fm-card p-3 p-md-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0 text-danger"><i class="fa-solid fa-triangle-exclamation ms-1"></i> تنبيهات المتابعة</h6>
+        <span class="badge bg-danger-subtle text-danger">{{ my_alerts|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for alert in my_alerts %}
+        <div class="list-group-item px-0 py-2 border-bottom">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="badge bg-danger text-white" style="font-size: 0.7rem;">{{ alert.get_alert_type_display }}</span>
+            <form method="POST" action="{% url 'resolve_alert' alert.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.68rem;">
+                تمت المتابعة
+              </button>
+            </form>
+          </div>
+          <div class="fw-bold small text-dark">{{ alert.title }}</div>
+          <p class="text-muted small mb-0">{{ alert.message }}</p>
+        </div>
+        {% empty %}
+        <div class="text-center py-3 text-muted small">
+          <i class="fa-solid fa-circle-check text-success fs-3 mb-1 d-block"></i>
+          كل الطلاب ماشيين تمام ومفيش غياب متكرر!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- واجبات مستنية تتصحح -->
+    <div class="fm-card p-3 p-md-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-feather text-primary ms-1"></i> واجبات مستنية التصحيح</h6>
+        <span class="badge bg-primary-subtle text-primary">{{ pending_submissions|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for sub in pending_submissions %}
+        <div class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+          <div>
+            <div class="fw-bold small text-dark">{{ sub.student.user.display_name }}</div>
+            <div class="text-muted small" style="font-size: 0.72rem;">{{ sub.assignment.title }}</div>
+          </div>
+          <a href="{% url 'assignment_detail' sub.assignment.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;">
+            صحح
+          </a>
+        </div>
+        {% empty %}
+        <div class="text-center py-2 text-muted small">كل الواجبات متصححة!</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

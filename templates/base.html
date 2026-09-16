@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}فيوتشر مايندز أونلاين{% endblock %} | Future Minds Academy</title>
+  
+  <!-- Favicon using Official Logo -->
+  <link rel="icon" type="image/jpeg" href="{% static 'img/logo.jpg' %}">
+
+  <!-- Google Font: Cairo (Egyptian Arabic Favorite) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 RTL CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Brand CSS -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  {% if user.is_authenticated %}
+  <!-- القائمة الجانبية (Sidebar) -->
+  <aside class="fm-sidebar" id="sidebar">
+    <div class="fm-sidebar-brand">
+      <!-- اللوجو الرسمي -->
+      <a href="{% url 'dashboard_redirect' %}" class="d-flex align-items-center text-decoration-none">
+        <img src="{% static 'img/logo.jpg' %}" alt="Future Minds Academy" class="fm-brand-logo">
+      </a>
+      <button class="btn btn-sm d-lg-none text-secondary" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark fs-5"></i>
+      </button>
+    </div>
+
+    <div class="py-2">
+      <div class="fm-nav-section-title">القائمة الرئيسية</div>
+      
+      {% if user.is_admin_role %}
+        <a href="{% url 'admin_dashboard' %}" class="fm-nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>لوحة الإدارة</span>
+        </a>
+      {% elif user.is_instructor_role %}
+        <a href="{% url 'instructor_dashboard' %}" class="fm-nav-link {% if request.resolver_match.url_name == 'instructor_dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-chalkboard-user"></i>
+          <span>لوحة المدرس</span>
+        </a>
+      {% elif user.is_student_role %}
+        <a href="{% url 'student_dashboard' %}" class="fm-nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-house"></i>
+          <span>صفحتي الرئيسية</span>
+        </a>
+      {% endif %}
+
+      <div class="fm-nav-section-title">التعليم والمتابعة</div>
+      <a href="{% url 'classes_list' %}" class="fm-nav-link {% if 'classes' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-video"></i>
+        <span>الحصص والمواعيد</span>
+      </a>
+      <a href="{% url 'courses_list' %}" class="fm-nav-link {% if 'courses' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-book-open"></i>
+        <span>الكورسات والدروس</span>
+      </a>
+      <a href="{% url 'assignments_list' %}" class="fm-nav-link {% if 'assignments' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-laptop-code"></i>
+        <span>الواجبات</span>
+      </a>
+      <a href="{% url 'quizzes_list' %}" class="fm-nav-link {% if 'quizzes' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-square-check"></i>
+        <span>الكويزات</span>
+      </a>
+
+      {% if user.is_student_role %}
+      <a href="{% url 'progress_index' %}" class="fm-nav-link {% if 'progress' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>مستوى تقدمي</span>
+      </a>
+      {% endif %}
+
+      {% if user.is_admin_role or user.is_instructor_role %}
+      <a href="{% url 'attendance_index' %}" class="fm-nav-link {% if 'attendance' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-clipboard-check"></i>
+        <span>كشف الحضور</span>
+      </a>
+      {% endif %}
+
+      {% if user.is_admin_role %}
+      <div class="fm-nav-section-title">إدارة الأكاديمية</div>
+      <a href="{% url 'students_list' %}" class="fm-nav-link {% if 'students' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-user-graduate"></i>
+        <span>الطلاب</span>
+      </a>
+      <a href="{% url 'instructors_list' %}" class="fm-nav-link {% if 'instructors' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>المدرسين</span>
+      </a>
+      <a href="{% url 'analytics' %}" class="fm-nav-link {% if 'analytics' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-chart-simple"></i>
+        <span>التقارير والإحصائيات</span>
+      </a>
+      <a href="{% url 'attendance_rules_settings' %}" class="fm-nav-link {% if 'settings' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-gear"></i>
+        <span>قواعد الحضور</span>
+      </a>
+      {% endif %}
+
+      {% if user.is_instructor_role %}
+      <div class="fm-nav-section-title">الطلاب</div>
+      <a href="{% url 'students_list' %}" class="fm-nav-link {% if 'students' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-users"></i>
+        <span>طلابي</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- بطاقة المستخدم في أسفل القائمة -->
+    <div class="p-3 border-top mt-auto" style="position: absolute; bottom: 0; left: 0; right: 0; background: #FFF;">
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center fw-bold text-primary" style="width: 38px; height: 38px;">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </div>
+        <div class="overflow-hidden">
+          <div class="fw-bold text-truncate small">{{ user.display_name }}</div>
+          <div class="text-muted text-truncate" style="font-size: 0.75rem;">
+            {% if user.is_admin_role %}أدمن الأكاديمية
+            {% elif user.is_instructor_role %}مدرس
+            {% elif user.is_student_role %}
+              {% if user.student_profile.learning_mode == 'ONLINE' %}طالب أونلاين{% else %}طالب في المقر{% endif %}
+            {% endif %}
+          </div>
+        </div>
+        <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger me-auto" title="خروج">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- الشريط العلوي (Topbar) -->
+  <header class="fm-topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-light d-lg-none" id="sidebarToggleBtn">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div>
+        <h6 class="mb-0 fw-bold" style="color: var(--fm-dark);">فيوتشر مايندز أونلاين</h6>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+      <!-- شارة الدور -->
+      {% if user.is_admin_role %}
+        <span class="badge" style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+          <i class="fa-solid fa-shield-halved ms-1"></i> إدارة
+        </span>
+      {% elif user.is_instructor_role %}
+        <span class="badge" style="background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+          <i class="fa-solid fa-chalkboard-user ms-1"></i> مدرس
+        </span>
+      {% elif user.is_student_role %}
+        {% if user.student_profile.learning_mode == 'ONLINE' %}
+          <span class="badge badge-online">
+            <i class="fa-solid fa-globe ms-1"></i> أونلاين
+          </span>
+        {% else %}
+          <span class="badge badge-offline">
+            <i class="fa-solid fa-school ms-1"></i> في المقر
+          </span>
+        {% endif %}
+      {% endif %}
+
+      <!-- الإشعارات -->
+      <div class="dropdown">
+        <button class="btn btn-light position-relative rounded-circle p-2" type="button" data-bs-toggle="dropdown" style="width: 40px; height: 40px;">
+          <i class="fa-regular fa-bell text-secondary"></i>
+          {% if unread_notifications_count > 0 %}
+            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+              {{ unread_notifications_count }}
+            </span>
+          {% endif %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 p-2 text-end" style="width: 300px; max-height: 400px; overflow-y: auto; border-radius: 1rem;">
+          <li class="d-flex align-items-center justify-content-between px-2 py-1 mb-2 border-bottom">
+            <span class="fw-bold small">الإشعارات</span>
+            <a href="{% url 'notifications' %}" class="small text-decoration-none" style="color: var(--fm-blue);">عرض الكل</a>
+          </li>
+          {% for notif in recent_notifications %}
+            <li>
+              <a class="dropdown-item rounded p-2 mb-1 {% if not notif.is_read %}bg-light fw-bold{% endif %}" href="{% url 'mark_notification_read' notif.id %}">
+                <div class="small mb-0">{{ notif.title }}</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem;">{{ notif.message }}</div>
+                <span class="text-muted" style="font-size: 0.68rem;">منذ {{ notif.created_at|timesince }}</span>
+              </a>
+            </li>
+          {% empty %}
+            <li class="text-center text-muted py-3 small">مفيش إشعارات جديدة</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- بروفايل المستخدم -->
+      <div class="dropdown">
+        <button class="btn d-flex align-items-center gap-2 p-1 border-0" data-bs-toggle="dropdown">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+            {{ user.first_name|default:user.username|slice:":1"|upper }}
+          </div>
+          <span class="fw-bold small d-none d-sm-inline">{{ user.display_name }}</span>
+          <i class="fa-solid fa-chevron-down text-muted" style="font-size: 0.75rem;"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-start shadow-sm border-0 mt-2 text-end" style="border-radius: 0.75rem;">
+          <li><a class="dropdown-item small" href="{% url 'profile' %}"><i class="fa-solid fa-user ms-2 text-muted"></i>تعديل بياناتي</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item small text-danger" href="{% url 'logout' %}"><i class="fa-solid fa-arrow-right-from-bracket ms-2"></i>خروج</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  <!-- محتوى الصفحة -->
+  <main class="{% if user.is_authenticated %}fm-main-content{% else %}container py-5{% endif %}">
+    
+    <!-- رسائل التنبيهات -->
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm d-flex align-items-center gap-2" role="alert">
+            {% if message.tags == 'success' %}
+              <i class="fa-solid fa-circle-check fs-5 text-success"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}
+              <i class="fa-solid fa-circle-exclamation fs-5 text-danger"></i>
+            {% else %}
+              <i class="fa-solid fa-circle-info fs-5 text-info"></i>
+            {% endif %}
+            <div class="fw-semibold">{{ message }}</div>
+            <button type="button" class="btn-close me-auto ms-0" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('show');
+      });
+    }
+    if (closeBtn && sidebar) {
+      closeBtn.addEventListener('click', () => {
+        sidebar.classList.remove('show');
+      });
+    }
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

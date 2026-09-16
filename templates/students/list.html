@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}الطلاب{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">إدارة ومتابعة الطلاب</h3>
+    <p class="text-muted small mb-0">متابعة طلاب الأونلاين وحضور طلاب مقر الأكاديمية.</p>
+  </div>
+  {% if user.is_admin_role %}
+  <a href="{% url 'student_add' %}" class="btn btn-fm-primary btn-sm">
+    <i class="fa-solid fa-user-plus ms-1"></i> إضافة طالب جديد
+  </a>
+  {% endif %}
+</div>
+
+<!-- الفلاتر والبحث -->
+<div class="fm-card p-3 mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="d-flex gap-2">
+      <a href="{% url 'students_list' %}" class="btn btn-sm {% if not mode_filter %}btn-dark{% else %}btn-light border{% endif %}">
+        كل الطلاب
+      </a>
+      <a href="{% url 'students_list' %}?mode=ONLINE" class="btn btn-sm {% if mode_filter == 'ONLINE' %}btn-primary{% else %}btn-light border{% endif %}">
+        <i class="fa-solid fa-globe ms-1"></i> طلاب أونلاين
+      </a>
+      <a href="{% url 'students_list' %}?mode=OFFLINE" class="btn btn-sm {% if mode_filter == 'OFFLINE' %}btn-purple text-white{% else %}btn-light border{% endif %}" style="{% if mode_filter == 'OFFLINE' %}background: var(--fm-purple);{% endif %}">
+        <i class="fa-solid fa-school ms-1"></i> في المقر
+      </a>
+    </div>
+
+    <form method="GET" class="d-flex gap-2" style="max-width: 280px;">
+      {% if mode_filter %}<input type="hidden" name="mode" value="{{ mode_filter }}">{% endif %}
+      <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm bg-light" placeholder="بحث باسم الطالب...">
+      <button type="submit" class="btn btn-sm btn-outline-secondary">بحث</button>
+    </form>
+  </div>
+</div>
+
+<div class="fm-card p-4">
+  <div class="table-responsive">
+    <table class="table fm-table">
+      <thead>
+        <tr>
+          <th>الطالب</th>
+          <th>طريقة التعلم</th>
+          <th>المدرس المسئول</th>
+          <th>الكورسات</th>
+          <th>سجل الحضور</th>
+          <th>الملف</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for st in students %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 34px; height: 34px;">
+                {{ st.user.first_name|default:st.user.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <strong class="text-dark">{{ st.user.display_name }}</strong>
+                <div class="text-muted small">@{{ st.user.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if st.learning_mode == 'ONLINE' %}
+              <span class="badge badge-online">أونلاين</span>
+            {% else %}
+              <span class="badge badge-offline">في المقر</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if st.assigned_instructor %}
+              <span class="small fw-bold">م/ {{ st.assigned_instructor.user.display_name }}</span>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ st.courses.count }} كورس</span>
+          </td>
+          <td>
+            <span class="small fw-bold">{{ st.attendances.count }} حصة</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'student_detail' st.id %}" class="btn btn-sm btn-outline-primary py-0 px-2">
+                عرض
+              </a>
+              {% if user.is_admin_role %}
+              <a href="{% url 'student_edit' st.id %}" class="btn btn-sm btn-light border py-0 px-2">
+                <i class="fa-solid fa-pencil"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted small">مفيش طلاب مطابقين لبحثك.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

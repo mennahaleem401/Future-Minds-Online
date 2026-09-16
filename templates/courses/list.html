@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}الكورسات{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">الكورسات والدروس</h3>
+    <p class="text-muted small mb-0">المناهج والدروس والمذكرات التعليمية للأكاديمية.</p>
+  </div>
+  {% if user.is_admin_role %}
+  <a href="{% url 'course_create' %}" class="btn btn-fm-primary btn-sm">
+    <i class="fa-solid fa-plus ms-1"></i> كورس جديد
+  </a>
+  {% endif %}
+</div>
+
+<!-- كروت الكورسات -->
+<div class="row g-4">
+  {% for course in courses %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="fm-card h-100 d-flex flex-column overflow-hidden">
+      <div class="p-4" style="background: linear-gradient(135deg, rgba(108, 46, 185, 0.08) 0%, rgba(0, 119, 212, 0.08) 100%);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge bg-primary-subtle text-primary">{{ course.lessons.count }} دروس</span>
+          {% if course.is_active %}
+            <span class="badge bg-success-subtle text-success">نشط</span>
+          {% else %}
+            <span class="badge bg-secondary-subtle text-secondary">مسودة</span>
+          {% endif %}
+        </div>
+        <h5 class="fw-bold text-dark mb-1">{{ course.title }}</h5>
+        <span class="small text-muted">المدرس: م/ {{ course.instructor.user.display_name|default:"سيتم تحديده" }}</span>
+      </div>
+      <div class="p-4 flex-grow-1 d-flex flex-column justify-content-between">
+        <p class="text-muted small mb-3">
+          {{ course.description|truncatewords:20 }}
+        </p>
+        <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+          <span class="small text-muted"><i class="fa-solid fa-users ms-1"></i> {{ course.enrolled_students.count }} طلاب</span>
+          <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-fm-primary">عرض الدروس</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5 text-muted">مفيش كورسات متاحة حالياً.</div>
+  {% endfor %}
+</div>
+{% endblock %}

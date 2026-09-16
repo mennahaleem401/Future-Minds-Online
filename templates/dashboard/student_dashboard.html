@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة الطالب{% endblock %}
+
+{% block content %}
+<!-- ترحيب سريع ومختصر -->
+<div class="fm-card p-4 mb-4 text-white" style="background: var(--fm-gradient); border-radius: 1.25rem;">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        {% if student.learning_mode == 'ONLINE' %}
+          <span class="badge bg-white text-primary fw-bold">طالب أونلاين</span>
+        {% else %}
+          <span class="badge bg-white text-purple fw-bold" style="color: var(--fm-purple);">طالب في المقر</span>
+        {% endif %}
+      </div>
+      <h3 class="fw-bold mb-1">أهلاً يا {{ student.user.first_name }}! 👋</h3>
+      <p class="mb-0 text-white-50 small">جاهز لحصة النهاردة ومتابعة دروسك وواجباتك؟</p>
+    </div>
+    
+    <!-- الحصص المكتملة -->
+    <div class="p-3 bg-white bg-opacity-10 rounded-3 text-center border border-white border-opacity-25">
+      <span class="text-white-50 small d-block">الحصص المكتملة</span>
+      <h3 class="fw-bold mb-0 text-white">{{ attended_classes }} / {{ total_classes }}</h3>
+      <span class="small text-white-50">حصة منتهية</span>
+    </div>
+  </div>
+</div>
+
+<!-- كارت حصة النهاردة (زرار دخول الحصة الكبير) -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-8">
+    {% if today_class %}
+      <div class="fm-card p-4 border-end border-4 border-success shadow-sm" style="background: linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%);">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <span class="badge bg-success text-white fw-bold mb-2">حصتك النهاردة</span>
+            <h4 class="fw-bold mb-1 text-dark">{{ today_class.title }}</h4>
+            <div class="text-muted small">
+              <i class="fa-regular fa-clock ms-1"></i> {{ today_class.start_time|time:"g:i A" }} • م/ {{ today_class.instructor.user.display_name }}
+            </div>
+          </div>
+          <div>
+            {% if today_class.is_time_reached %}
+              <!-- زرار الدخول الذكي -->
+              <a href="{% url 'join_class' today_class.id %}" target="_blank" class="btn btn-join-class py-3 px-4">
+                <i class="fa-solid fa-video fs-5"></i>
+                <span>ادخل الحصة دلوقتي</span>
+              </a>
+              <div class="text-center mt-1">
+                <span class="text-muted" style="font-size: 0.75rem;"><i class="fa-solid fa-video ms-1"></i> رابط الحصة المباشر</span>
+              </div>
+            {% else %}
+              <button class="btn btn-locked-session py-3 px-4 disabled" disabled>
+                <i class="fa-solid fa-lock fs-5 ms-2"></i>
+                <span>مقفول لميعاد الحصة ({{ today_class.start_time|time:"g:i A" }})</span>
+              </button>
+              <div class="text-center mt-1">
+                <span class="text-muted" style="font-size: 0.75rem;"><i class="fa-solid fa-clock ms-1"></i> الزرار يفتح في ميعاد الحصة</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% elif next_class %}
+      <div class="fm-card p-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <span class="badge bg-primary-subtle text-primary fw-bold mb-1">الحصة الجاية</span>
+            <h5 class="fw-bold mb-1 text-dark">{{ next_class.title }}</h5>
+            <div class="text-muted small">{{ next_class.scheduled_date|date:"l, d M" }} • الساعة {{ next_class.start_time|time:"g:i A" }}</div>
+          </div>
+          <a href="{% url 'class_detail' next_class.id %}" class="btn btn-sm btn-outline-primary">تفاصيل الحصة</a>
+        </div>
+      </div>
+    {% else %}
+      <div class="fm-card p-4 text-center py-4 text-muted">
+        <i class="fa-solid fa-calendar-check fs-2 text-muted mb-2 d-block"></i>
+        <h6 class="fw-bold mb-0">مفيش حصص مجدولة النهاردة</h6>
+      </div>
+    {% endif %}
+
+    <!-- مستوى تقدمك في الكورسات -->
+    <div class="fm-card p-4 mt-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-chart-line text-primary ms-2"></i> مستوى تقدمك</h6>
+        <a href="{% url 'progress_index' %}" class="small text-decoration-none" style="color: var(--fm-blue);">تفاصيل أكتر</a>
+      </div>
+      <div class="row g-3">
+        {% for pr in progress_records %}
+        <div class="col-12 col-md-6">
+          <div class="p-3 border rounded-3 bg-light bg-opacity-50">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <strong class="small text-dark text-truncate">{{ pr.course.title }}</strong>
+              <span class="badge bg-primary fw-bold">{{ pr.overall_percentage|floatformat:0 }}%</span>
+            </div>
+            <div class="fm-progress-bar mb-2">
+              <div class="fm-progress-fill" style="width: {{ pr.overall_percentage|floatformat:0 }}%;"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+              <span>دروس: {{ pr.lessons_completed_count }}</span>
+              <span>واجبات: {{ pr.assignment_score_avg|floatformat:0 }}%</span>
+              <span>كويزات: {{ pr.quiz_score_avg|floatformat:0 }}%</span>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-2 text-muted small">هيبدأ حساب تقدمك مع حضور الحصص وحل الواجبات.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- العمود الجانبي: واجبات وكويزات -->
+  <div class="col-12 col-lg-4">
+    
+    <!-- الواجبات المطلوبة -->
+    <div class="fm-card p-3 p-md-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-laptop-code text-warning ms-2"></i> واجبات مطلوبة</h6>
+        <span class="badge bg-warning-subtle text-warning">{{ pending_assignments|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for hw in pending_assignments %}
+        <div class="list-group-item px-0 py-2 border-bottom d-flex align-items-center justify-content-between">
+          <div>
+            <div class="fw-bold small text-dark">{{ hw.title }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">تسليم قبل: {{ hw.due_date|date:"d M, g:i A" }}</div>
+          </div>
+          <a href="{% url 'assignment_detail' hw.id %}" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 0.75rem;">
+            حل الواجب
+          </a>
+        </div>
+        {% empty %}
+        <div class="text-center py-3 text-muted small">
+          <i class="fa-solid fa-circle-check text-success fs-4 mb-1 d-block"></i>
+          كل الواجبات متسلمة! شاطر جداً!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- كويزات متاحة -->
+    <div class="fm-card p-3 p-md-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-square-check text-success ms-2"></i> كويزات متاحة</h6>
+        <span class="badge bg-success-subtle text-success">{{ available_quizzes|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for q in available_quizzes %}
+        <div class="list-group-item px-0 py-2 border-bottom d-flex align-items-center justify-content-between">
+          <div>
+            <div class="fw-bold small text-dark">{{ q.title }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">{{ q.questions.count }} أسئلة</div>
+          </div>
+          <a href="{% url 'quiz_take' q.id %}" class="btn btn-sm btn-fm-primary py-1 px-2" style="font-size: 0.75rem;">
+            ابدأ الكويز
+          </a>
+        </div>
+        {% empty %}
+        <div class="text-center py-2 text-muted small">مفيش كويزات جديدة دلوقتي.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

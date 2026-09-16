@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}إضافة واجب جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-7">
+    <div class="fm-card p-4 p-md-5">
+      <h4 class="fw-bold mb-1">إضافة واجب أو تدريب جديد</h4>
+      <p class="text-muted small mb-4">تحديد المطلوب والدرجة وتاريخ التسليم للطلاب.</p>
+
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label small fw-bold">الكورس</label>
+          <select name="course_id" class="form-select" required>
+            <option value="">-- اختر الكورس --</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}">{{ c.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">عنوان الواجب</label>
+          <input type="text" name="title" class="form-control" placeholder="مثال: واجب بايثون - الفانكشنز وحل المسائل" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">المطلوب من الطالب</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="اكتب المطلوب وحالات الاختبار بوضوح..." required></textarea>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">الدرجة العظمى</label>
+            <input type="number" name="max_score" value="100" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">آخر موعد تسليم</label>
+            <input type="datetime-local" name="due_date" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold">ملف تدريب إضافي (اختياري)</label>
+          <input type="file" name="starter_file" class="form-control">
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'assignments_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary">نشر الواجب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

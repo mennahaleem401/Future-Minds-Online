@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}كويز: {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-8">
+    <div class="fm-card p-4 p-md-5">
+      
+      <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+        <div>
+          <span class="badge bg-primary-subtle text-primary fw-bold mb-1">{{ quiz.course.title }}</span>
+          <h4 class="fw-bold mb-0 text-dark">{{ quiz.title }}</h4>
+        </div>
+        <div class="p-2 bg-light rounded-3 text-center border">
+          <span class="text-muted small d-block" style="font-size: 0.7rem;">وقت الكويز</span>
+          <strong class="text-primary">{{ quiz.time_limit_minutes }} دقيقة</strong>
+        </div>
+      </div>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        {% for q in questions %}
+        <div class="mb-4 p-3 p-md-4 rounded-3 border bg-light bg-opacity-25">
+          <div class="d-flex align-items-start gap-2 mb-3">
+            <span class="badge bg-primary text-white mt-1">{{ forloop.counter }}</span>
+            <div class="fw-bold text-dark fs-6" style="white-space: pre-wrap;">{{ q.prompt }}</div>
+          </div>
+
+          <div class="me-3">
+            <!-- الاختيار أ -->
+            <div class="form-check p-2 mb-2 bg-white rounded-3 border">
+              <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q_{{ q.id }}_a" value="A" required>
+              <label class="form-check-label w-100 cursor-pointer small text-dark me-2" for="q_{{ q.id }}_a">
+                <strong>أ.</strong> {{ q.option_a }}
+              </label>
+            </div>
+
+            <!-- الاختيار ب -->
+            <div class="form-check p-2 mb-2 bg-white rounded-3 border">
+              <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q_{{ q.id }}_b" value="B">
+              <label class="form-check-label w-100 cursor-pointer small text-dark me-2" for="q_{{ q.id }}_b">
+                <strong>ب.</strong> {{ q.option_b }}
+              </label>
+            </div>
+
+            <!-- الاختيار ج -->
+            {% if q.option_c %}
+            <div class="form-check p-2 mb-2 bg-white rounded-3 border">
+              <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q_{{ q.id }}_c" value="C">
+              <label class="form-check-label w-100 cursor-pointer small text-dark me-2" for="q_{{ q.id }}_c">
+                <strong>ج.</strong> {{ q.option_c }}
+              </label>
+            </div>
+            {% endif %}
+
+            <!-- الاختيار د -->
+            {% if q.option_d %}
+            <div class="form-check p-2 mb-2 bg-white rounded-3 border">
+              <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q_{{ q.id }}_d" value="D">
+              <label class="form-check-label w-100 cursor-pointer small text-dark me-2" for="q_{{ q.id }}_d">
+                <strong>د.</strong> {{ q.option_d }}
+              </label>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+          <a href="{% url 'quizzes_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary px-4">
+            <i class="fa-solid fa-paper-plane ms-1"></i> تسليم الكويز وعرض النتيجة
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

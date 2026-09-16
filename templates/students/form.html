@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}{% if student %}تعديل بيانات الطالب{% else %}إضافة طالب جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-10 col-lg-8">
+    <div class="fm-card p-4 p-md-5">
+      <h4 class="fw-bold mb-1">{% if student %}تعديل بيانات: {{ student.user.display_name }}{% else %}إضافة طالب جديد{% endif %}</h4>
+      <p class="text-muted small mb-4">تسجيل الطالب وتحديد نوع الحضور (أونلاين أو في المقر).</p>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">الاسم الأول</label>
+            <input type="text" name="first_name" value="{{ student.user.first_name|default:'' }}" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">اسم العائلة</label>
+            <input type="text" name="last_name" value="{{ student.user.last_name|default:'' }}" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">اسم المستخدم</label>
+            <input type="text" name="username" value="{{ student.user.username|default:'' }}" class="form-control" {% if student %}readonly{% else %}required{% endif %}>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">البريد الإلكتروني</label>
+            <input type="email" name="email" value="{{ student.user.email|default:'' }}" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">كلمة السر {% if student %}(سيبها فاضية لو مش عايز تغيرها){% endif %}</label>
+            <input type="password" name="password" class="form-control" {% if not student %}required{% endif %}>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">رقم التليفون</label>
+            <input type="text" name="phone" value="{{ student.user.phone|default:'' }}" class="form-control">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">طريقة الحضور</label>
+            <select name="learning_mode" class="form-select" required>
+              <option value="ONLINE" {% if student.learning_mode == 'ONLINE' %}selected{% endif %}>طالب أونلاين (جوجل ميت والمنصة)</option>
+              <option value="OFFLINE" {% if student.learning_mode == 'OFFLINE' %}selected{% endif %}>طالب في المقر (حضور فعلي في الأكاديمية)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">المدرس المسئول</label>
+            <select name="instructor_id" class="form-select">
+              <option value="">-- بدون مدرس محدد --</option>
+              {% for inst in instructors %}
+              <option value="{{ inst.id }}" {% if student.assigned_instructor.id == inst.id %}selected{% endif %}>
+                م/ {{ inst.user.display_name }} ({{ inst.specialization }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">اسم ولي الأمر</label>
+            <input type="text" name="emergency_contact" value="{{ student.emergency_contact|default:'' }}" class="form-control" placeholder="اسم الأب أو الأم">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">رقم تليفون ولي الأمر (واتساب)</label>
+            <input type="text" name="emergency_phone" value="{{ student.emergency_phone|default:'' }}" class="form-control" placeholder="01xxxxxxxxx">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">الكورسات المشترك فيها</label>
+          <select name="courses" class="form-select" multiple size="3">
+            {% for c in courses %}
+            <option value="{{ c.id }}" {% if student and c in student.courses.all %}selected{% endif %}>
+              {{ c.title }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'students_list' %}" class="btn btn-light border">إلغاء</a>
+          <button type="submit" class="btn btn-fm-primary">حفظ الطالب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}الواجبات{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+  <div>
+    <h3 class="fw-bold mb-1">الواجبات والمهام</h3>
+    <p class="text-muted small mb-0">التدريبات العملية والمهام البرمجية لمتابعة استيعاب الطلاب.</p>
+  </div>
+  {% if user.is_admin_role or user.is_instructor_role %}
+  <a href="{% url 'assignment_create' %}" class="btn btn-fm-primary btn-sm">
+    <i class="fa-solid fa-plus ms-1"></i> واجب جديد
+  </a>
+  {% endif %}
+</div>
+
+<div class="fm-card p-4">
+  <div class="table-responsive">
+    <table class="table fm-table">
+      <thead>
+        <tr>
+          <th>اسم الواجب</th>
+          <th>الكورس</th>
+          <th>آخر ميعاد تسليم</th>
+          <th>الدرجة</th>
+          {% if user.is_student_role %}
+          <th>حالتي</th>
+          {% else %}
+          <th>المسلمين</th>
+          {% endif %}
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td><strong class="text-dark">{{ a.title }}</strong></td>
+          <td class="small text-muted">{{ a.course.title }}</td>
+          <td>
+            <div class="small fw-bold text-dark">{{ a.due_date|date:"d M, Y" }}</div>
+            <div class="text-muted small">{{ a.due_date|time:"g:i A" }}</div>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ a.max_score }} درجة</span></td>
+          {% if user.is_student_role %}
+          <td>
+            {% if a.has_submitted %}
+              <span class="badge bg-success text-white"><i class="fa-solid fa-check ms-1"></i> سلمت</span>
+            {% else %}
+              <span class="badge bg-warning text-dark"><i class="fa-solid fa-hourglass-half ms-1"></i> لسه</span>
+            {% endif %}
+          </td>
+          {% else %}
+          <td><span class="badge bg-primary-subtle text-primary">{{ a.submissions.count }} طالب سلّم</span></td>
+          {% endif %}
+          <td>
+            <a href="{% url 'assignment_detail' a.id %}" class="btn btn-sm btn-fm-outline py-0 px-3">عرض</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted small">مفيش واجبات مطلوبة حالياً.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
