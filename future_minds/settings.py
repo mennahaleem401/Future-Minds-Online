@@ -155,6 +155,8 @@ STORAGES = {
     },
 }
 
+WHITENOISE_MANIFEST_STRICT = False
+
 # Media files (User uploads, materials, assignments)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.environ.get('MEDIA_DIR', BASE_DIR / 'media'))
